@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodsKB.API", "GoodsKB.API\GoodsKB.API.csproj", "{C6967D5A-3C6F-4169-98E8-597A44F3E90C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodsKB.DAL", "GoodsKB.DAL\GoodsKB.DAL.csproj", "{319CD41A-D1FE-4B79-B33D-3D9685B418CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoodsKB.BLL", "GoodsKB.BLL\GoodsKB.BLL.csproj", "{FDCCEE3C-0206-4195-A838-832AFB82B730}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C6967D5A-3C6F-4169-98E8-597A44F3E90C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6967D5A-3C6F-4169-98E8-597A44F3E90C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6967D5A-3C6F-4169-98E8-597A44F3E90C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6967D5A-3C6F-4169-98E8-597A44F3E90C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{319CD41A-D1FE-4B79-B33D-3D9685B418CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{319CD41A-D1FE-4B79-B33D-3D9685B418CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{319CD41A-D1FE-4B79-B33D-3D9685B418CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{319CD41A-D1FE-4B79-B33D-3D9685B418CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDCCEE3C-0206-4195-A838-832AFB82B730}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDCCEE3C-0206-4195-A838-832AFB82B730}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDCCEE3C-0206-4195-A838-832AFB82B730}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDCCEE3C-0206-4195-A838-832AFB82B730}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
