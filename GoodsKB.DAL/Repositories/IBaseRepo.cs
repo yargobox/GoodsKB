@@ -4,7 +4,8 @@ namespace GoodsKB.DAL.Repositories;
 
 public interface IEntityId<TKey>
 {
-	TKey Id { get; set; }
+	TKey GetId();
+	void SetId(TKey id);
 }
 
 public interface IBaseRepo<TKey, TEntity> where TEntity : IEntityId<TKey>

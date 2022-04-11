@@ -5,6 +5,8 @@ namespace GoodsKB.DAL.Entities;
 public class User : IEntityId<int>
 {
 	public int Id { get; set; }
+	public void SetId(int id) => Id = id;
+	public int GetId() => Id;
 
 	public string? Username { get; set; }
 	public string? FirstName { get; set; }

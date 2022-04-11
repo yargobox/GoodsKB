@@ -5,6 +5,8 @@ namespace GoodsKB.DAL.Entities;
 public class Direction : IEntityId<int>
 {
 	public int Id { get; set; }
+	public void SetId(int id) => Id = id;
+	public int GetId() => Id;
 
 	public string? Name { get; set; }
 	public string? Desc { get; set; }

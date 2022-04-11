@@ -7,6 +7,8 @@ public class ProdCat1 : IEntityId<int>
 	public static readonly ProdCat1 Empty = new ProdCat1();
 
 	public int Id { get; set; }
+	public void SetId(int id) => Id = id;
+	public int GetId() => Id;
 
 	public string? Name { get; set; }
 	public string? Desc { get; set; }

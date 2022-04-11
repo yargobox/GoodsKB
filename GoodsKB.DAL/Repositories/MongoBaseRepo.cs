@@ -18,12 +18,12 @@ internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposa
 	public virtual async Task<TKey> CreateAsync(TEntity item)
 	{
 		await _entities.InsertOneAsync(item);
-		return await Task.FromResult(item.Id);
+		return await Task.FromResult(item.GetId());
 	}
 
 	public virtual async Task<TEntity?> GetAsync(TKey id)
 	{
-		var filter = FilterBuilder.Eq(item => item.Id, id);
+		var filter = FilterBuilder.Eq(item => item.GetId(), id);
 		return await _entities.Find(filter).SingleOrDefaultAsync();
 	}
 
@@ -39,13 +39,13 @@ internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposa
 
 	public virtual async Task UpdateAsync(TEntity item)
 	{
-		var filter = FilterBuilder.Eq(existingItem => existingItem.Id, item.Id);
+		var filter = FilterBuilder.Eq(existingItem => existingItem.GetId(), item.GetId());
 		await _entities.ReplaceOneAsync(filter, item);
 	}
 
 	public virtual async Task DeleteAsync(TKey id)
 	{
-		var filter = FilterBuilder.Eq(item => item.Id, id);
+		var filter = FilterBuilder.Eq(item => item.GetId(), id);
 		await _entities.DeleteOneAsync(filter);
 	}
 
@@ -81,7 +81,7 @@ internal class MongoGuidIdentityRepo<TEntity> : MongoBaseRepo<Guid, TEntity> whe
 
 	public override async Task<Guid> CreateAsync(TEntity item)
 	{
-		if (item.Id == default(Guid)) item.Id = Guid.NewGuid();
+		if (item.GetId() == default(Guid)) item.SetId(Guid.NewGuid());
 
 		return await base.CreateAsync(item);
 	}
@@ -127,11 +127,11 @@ internal class MongoIntIdentityRepo<TEntity> : MongoBaseRepo<int, TEntity> where
 
 	public override async Task<int> CreateAsync(TEntity item)
 	{
-		if (item.Id == default(int))
+		if (item.GetId() == default(int))
 		{
 			// https://stackoverflow.com/questions/49500551/insert-a-document-while-auto-incrementing-a-sequence-field-in-mongodb
 			//https://stackoverflow.com/questions/50068823/how-to-insert-document-to-mongodb-and-return-the-same-document-or-its-id-back-u
-			item.Id = (new Random()).Next(0, 0x7FFFFFF);//!!!
+			item.SetId((new Random()).Next(0, 0x7FFFFFF));//!!!
 		}
 
 		return await base.CreateAsync(item);
