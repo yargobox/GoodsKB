@@ -2,13 +2,11 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class User : IEntityId<int>
+public class User : IIdentifiableEntity<int>, ISoftDelEntity<DateTimeOffset>
 {
 	public int Id { get; set; }
-	public void SetId(int id) => Id = id;
-	public int GetId() => Id;
 
-	public string? Username { get; set; }
+	public string Username { get; set; } = string.Empty;
 	public string? FirstName { get; set; }
 	public string? LastName { get; set; }
 	public string? Email { get; set; }
@@ -23,6 +21,6 @@ public class User : IEntityId<int>
 	public virtual IEnumerable<Direction> Directions {get; set; } = new List<Direction>();
 
 	public DateTimeOffset Created { get; set; }
-	public DateTimeOffset Updated { get; set; }
-	public DateTimeOffset Deleted { get; set; }
+	public DateTimeOffset? Updated { get; set; }
+	public DateTimeOffset? Deleted { get; set; }
 }

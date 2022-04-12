@@ -2,13 +2,17 @@ using MongoDB.Driver;
 
 namespace GoodsKB.DAL.Repositories;
 
-public interface IEntityId<TKey>
+public interface IIdentifiableEntity<TKey>
 {
-	TKey GetId();
-	void SetId(TKey id);
+	TKey Id { get; set; }
 }
 
-public interface IBaseRepo<TKey, TEntity> where TEntity : IEntityId<TKey>
+public interface ISoftDelEntity<TDateTime> where TDateTime : struct
+{
+	TDateTime? Deleted { get; set; }
+}
+
+public interface IBaseRepo<TKey, TEntity> where TEntity : IIdentifiableEntity<TKey>
 {
 	Task<TKey> CreateAsync(TEntity entity);
 	Task<TEntity?> GetAsync(TKey id);
@@ -17,5 +21,5 @@ public interface IBaseRepo<TKey, TEntity> where TEntity : IEntityId<TKey>
 	Task UpdateAsync(TEntity entity);
 	Task DeleteAsync(TKey id);
 
-	FilterDefinitionBuilder<TEntity> FilterBuilder { get; }
+	FilterDefinitionBuilder<TEntity> Filter { get; }
 }

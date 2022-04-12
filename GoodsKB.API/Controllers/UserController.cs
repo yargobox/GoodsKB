@@ -63,6 +63,6 @@ public class UserController : ControllerBase
 	public async Task<ActionResult> DeleteAsync(int id)
 	{
 		await _userService.DeleteAsync(id);
-		return NoContent();
-	}
+			return NoContent();
+		}
 }

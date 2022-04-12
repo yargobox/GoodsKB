@@ -1,10 +1,11 @@
 using GoodsKB.DAL.Configuration;
+using GoodsKB.DAL.Common;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposable where TEntity : IEntityId<TKey>
+internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposable where TEntity : IIdentifiableEntity<TKey>
 {
 	protected IMongoCollection<TEntity> _entities;
 	protected IMongoDbContext _context;
@@ -18,18 +19,18 @@ internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposa
 	public virtual async Task<TKey> CreateAsync(TEntity item)
 	{
 		await _entities.InsertOneAsync(item);
-		return await Task.FromResult(item.GetId());
+		return await Task.FromResult(item.Id);
 	}
 
 	public virtual async Task<TEntity?> GetAsync(TKey id)
 	{
-		var filter = FilterBuilder.Eq(item => item.GetId(), id);
+		var filter = Filter.Eq(item => item.Id, id);
 		return await _entities.Find(filter).SingleOrDefaultAsync();
 	}
 
 	public virtual async Task<IEnumerable<TEntity>> GetAsync()
 	{
-		return await _entities.Find(new BsonDocument()).ToListAsync();
+		return await _entities.Find(Filter.Empty).ToListAsync();
 	}
 
 	public virtual async Task<IEnumerable<TEntity>> GetAsync(FilterDefinition<TEntity> filter)
@@ -39,17 +40,17 @@ internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposa
 
 	public virtual async Task UpdateAsync(TEntity item)
 	{
-		var filter = FilterBuilder.Eq(existingItem => existingItem.GetId(), item.GetId());
+		var filter = Filter.Eq(existingItem => existingItem.Id, item.Id);
 		await _entities.ReplaceOneAsync(filter, item);
 	}
 
 	public virtual async Task DeleteAsync(TKey id)
 	{
-		var filter = FilterBuilder.Eq(item => item.GetId(), id);
+		var filter = Filter.Eq(item => item.Id, id);
 		await _entities.DeleteOneAsync(filter);
 	}
 
-	public FilterDefinitionBuilder<TEntity> FilterBuilder { get; private set; } = Builders<TEntity>.Filter;
+	public FilterDefinitionBuilder<TEntity> Filter { get; private set; } = Builders<TEntity>.Filter;
 
 	public bool Disposed { get; protected set; }
 	public void Dispose()
@@ -68,11 +69,11 @@ internal class MongoBaseRepo<TKey, TEntity> : IBaseRepo<TKey, TEntity>, IDisposa
 
 		_context = null!;
 		_entities = null!;
-		FilterBuilder = null!;
+		Filter = null!;
 	}
 }
 
-internal class MongoGuidIdentityRepo<TEntity> : MongoBaseRepo<Guid, TEntity> where TEntity : IEntityId<Guid>
+internal class MongoGuidIdentityRepo<TEntity> : MongoBaseRepo<Guid, TEntity> where TEntity : IIdentifiableEntity<Guid>
 {
 	public MongoGuidIdentityRepo(IMongoDbContext context, string collectionName)
 		: base(context, collectionName)
@@ -81,13 +82,13 @@ internal class MongoGuidIdentityRepo<TEntity> : MongoBaseRepo<Guid, TEntity> whe
 
 	public override async Task<Guid> CreateAsync(TEntity item)
 	{
-		if (item.GetId() == default(Guid)) item.SetId(Guid.NewGuid());
+		if (item.Id == default(Guid)) item.Id = Guid.NewGuid();
 
 		return await base.CreateAsync(item);
 	}
 }
 
-internal class MongoIntIdentityRepo<TEntity> : MongoBaseRepo<int, TEntity> where TEntity : IEntityId<int>
+internal class MongoIntIdentityRepo<TEntity> : MongoBaseRepo<int, TEntity> where TEntity : IIdentifiableEntity<int>
 {
 	protected record IdentityCounter
 	{
@@ -127,13 +128,30 @@ internal class MongoIntIdentityRepo<TEntity> : MongoBaseRepo<int, TEntity> where
 
 	public override async Task<int> CreateAsync(TEntity item)
 	{
-		if (item.GetId() == default(int))
+		if (item.Id == default(int))
 		{
 			// https://stackoverflow.com/questions/49500551/insert-a-document-while-auto-incrementing-a-sequence-field-in-mongodb
 			//https://stackoverflow.com/questions/50068823/how-to-insert-document-to-mongodb-and-return-the-same-document-or-its-id-back-u
-			item.SetId((new Random()).Next(0, 0x7FFFFFF));//!!!
+			item.Id = (new Random()).Next(0, 0x7FFFFFF);//!!!
 		}
 
 		return await base.CreateAsync(item);
+	}
+}
+
+internal class MongoIntIdentitySoftDelRepo<TEntity> : MongoIntIdentityRepo<TEntity> where TEntity : IIdentifiableEntity<int>, ISoftDelEntity<DateTimeOffset>
+{
+	public MongoIntIdentitySoftDelRepo(IMongoDbContext context, string collectionName)
+		: base(context, collectionName)
+	{
+	}
+
+	public override async Task DeleteAsync(int id)
+	{
+		var filter = Filter.Eq(item => item.Id, id) & Filter.Ne(x => x.Deleted, (DateTimeOffset?) null);
+		var update = Builders<TEntity>.Update.Set(x => x.Deleted, DateTimeOffset.UtcNow);
+		var options = new FindOneAndUpdateOptions<TEntity, TEntity> { IsUpsert = false };
+
+		await _entities.FindOneAndUpdateAsync(filter, update, options);
 	}
 }

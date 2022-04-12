@@ -48,11 +48,11 @@ public class UserService : IUserService
 
 		MongoDB.Driver.FilterDefinition<User> filter;
 		if (email != null && phone != null)
-			filter = _items.FilterBuilder.Eq(x => x.Username, username) | _items.FilterBuilder.Eq(x => x.Email, email) | _items.FilterBuilder.Eq(x => x.Phone, phone);
+			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Email, email) | _items.Filter.Eq(x => x.Phone, phone);
 		else if (email != null)
-			filter = _items.FilterBuilder.Eq(x => x.Username, username) | _items.FilterBuilder.Eq(x => x.Email, email);
+			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Email, email);
 		else if (phone != null)
-			filter = _items.FilterBuilder.Eq(x => x.Username, username) | _items.FilterBuilder.Eq(x => x.Phone, phone);
+			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Phone, phone);
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 
@@ -103,11 +103,11 @@ public class UserService : IUserService
 
 		MongoDB.Driver.FilterDefinition<User> filter;
 		if (email != null && phone != null)
-			filter = _items.FilterBuilder.Eq(x => x.Username, username) | _items.FilterBuilder.Eq(x => x.Email, email) | _items.FilterBuilder.Eq(x => x.Phone, phone);
+			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Email, email) | _items.Filter.Eq(x => x.Phone, phone);
 		else if (email != null)
-			filter = _items.FilterBuilder.Eq(x => x.Username, username) | _items.FilterBuilder.Eq(x => x.Email, email);
+			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Email, email);
 		else if (phone != null)
-			filter = _items.FilterBuilder.Eq(x => x.Username, username) | _items.FilterBuilder.Eq(x => x.Phone, phone);
+			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Phone, phone);
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 

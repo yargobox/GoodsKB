@@ -3,7 +3,7 @@ using GoodsKB.DAL.Entities;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class UsersRepo : MongoIntIdentityRepo<User>
+internal class UsersRepo : MongoIntIdentitySoftDelRepo<User>
 {
 	public UsersRepo(IMongoDbContext context)
 		: base(context, "users")

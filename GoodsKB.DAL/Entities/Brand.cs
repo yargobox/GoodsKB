@@ -2,13 +2,11 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class Brand : IEntityId<int>
+public class Brand : IIdentifiableEntity<int>
 {
 	public static readonly Brand Empty = new Brand();
 
 	public int Id { get; set; }
-	public void SetId(int id) => Id = id;
-	public int GetId() => Id;
 
 	public string? Name { get; set; }
 	public string? Desc { get; set; }
