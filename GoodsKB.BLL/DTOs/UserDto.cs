@@ -17,6 +17,6 @@ public class UserDto
 	public virtual IEnumerable<DirectionDto> Directions {get; set; } = new List<DirectionDto>();
 
 	public DateTimeOffset Created { get; set; }
-	public DateTimeOffset Updated { get; set; }
-	public DateTimeOffset Deleted { get; set; }
+	public DateTimeOffset? Updated { get; set; }
+	public DateTimeOffset? Deleted { get; set; }
 }

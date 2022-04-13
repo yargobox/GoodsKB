@@ -2,7 +2,7 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class Product : IIdentifiableEntity<int>
+public class Product : IIdentEntity<int>
 {
 	public Product()
 	{

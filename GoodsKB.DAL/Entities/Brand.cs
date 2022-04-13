@@ -2,7 +2,7 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class Brand : IIdentifiableEntity<int>
+public class Brand : IIdentEntity<int>
 {
 	public static readonly Brand Empty = new Brand();
 

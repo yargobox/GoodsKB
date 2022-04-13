@@ -2,7 +2,7 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class ProdCat2 : IIdentifiableEntity<int>
+public class ProdCat2 : IIdentEntity<int>
 {
 	public static readonly ProdCat2 Empty = new ProdCat2();
 

@@ -51,11 +51,7 @@ public class UserController : ControllerBase
 	public async Task<ActionResult> UpdateAsync(int id, [FromBody] UserUpdateModel model)
 	{
 		var dto = _mapper.Map<UserUpdateDto>(model);
-		if (dto.Id == 0)
-			dto.Id = id;
-		else if (dto.Id != id)
-			return Conflict();
-		await _userService.UpdateAsync(dto);
+		await _userService.UpdateAsync(id, dto);
 		return NoContent();
 	}
 

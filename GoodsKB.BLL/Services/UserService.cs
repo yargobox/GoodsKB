@@ -13,7 +13,7 @@ public interface IUserService
 	Task<IEnumerable<UserDto>> GetAsync();
 	Task<UserDto> GetAsync(int id);
 	Task<int> CreateAsync(UserCreateDto dto);
-	Task UpdateAsync(UserUpdateDto dto);
+	Task UpdateAsync(int id, UserUpdateDto dto);
 	Task DeleteAsync(int id);
 }
 
@@ -21,7 +21,7 @@ public class UserService : IUserService
 {
 	private readonly IMapper _mapper;
 	private readonly IDALContext _context;
-	private readonly IBaseRepo<int, User> _items;
+	private readonly IMongoSoftDelRepo<int, User, DateTimeOffset> _items;
 
 	public UserService(IDALContext context, IMapper mapper)
 	{
@@ -85,8 +85,12 @@ public class UserService : IUserService
 		return mapped;
 	}
 
-	public async Task UpdateAsync(UserUpdateDto dto)
+	public async Task UpdateAsync(int id, UserUpdateDto dto)
 	{
+		var old = await _items.GetAsync(id);
+		if (old == null)
+			throw new NotFound404Exception($"User {dto.Username} [{id}] does not exist or has been deleted.");
+
 		string? username = null;
 		if (!string.IsNullOrWhiteSpace(dto.Username))
 			username = dto.Username.Trim();
@@ -113,6 +117,8 @@ public class UserService : IUserService
 
         if ((await _items.GetAsync(filter)).Where(x => x.Id != dto.Id).SingleOrDefault() != null)
 			throw new Conflict409Exception("The username, email or phone already exists");
+
+		var x = await _items.GetByCondition(x => x.Id != id && (x.Username == username || x.Email == email || x.Phone == phone));
 
 		var item = _mapper.Map<User>(dto);
 		item.Username = username;

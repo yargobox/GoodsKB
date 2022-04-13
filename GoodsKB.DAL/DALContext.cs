@@ -7,13 +7,13 @@ namespace GoodsKB.DAL;
 
 public interface IDALContext
 {
-	IBaseRepo<int, User> Users { get; }
-	IBaseRepo<int, Direction> Directions { get; }
-	IBaseRepo<int, ProdCat1> ProdCats1 { get; }
-	IBaseRepo<int, ProdCat2> ProdCats2 { get; }
-	IBaseRepo<int, ProdCat3> ProdCats3 { get; }
-	IBaseRepo<int, Product> Products { get; }
-	IBaseRepo<int, Brand> Brands { get; }
+	IMongoSoftDelRepo<int, User, DateTimeOffset> Users { get; }
+	IRepoBase<int, Direction> Directions { get; }
+	IRepoBase<int, ProdCat1> ProdCats1 { get; }
+	IRepoBase<int, ProdCat2> ProdCats2 { get; }
+	IRepoBase<int, ProdCat3> ProdCats3 { get; }
+	IRepoBase<int, Product> Products { get; }
+	IRepoBase<int, Brand> Brands { get; }
 }
 
 public class DALContext : IDALContext
@@ -29,11 +29,11 @@ public class DALContext : IDALContext
 		Brands = new BrandsRepo(mongoDbContext);
 	}
 
-	public IBaseRepo<int, User> Users { get; }
-	public IBaseRepo<int, Direction> Directions { get; }
-	public IBaseRepo<int, ProdCat1> ProdCats1 { get; }
-	public IBaseRepo<int, ProdCat2> ProdCats2 { get; }
-	public IBaseRepo<int, ProdCat3> ProdCats3 { get; }
-	public IBaseRepo<int, Product> Products { get; }
-	public IBaseRepo<int, Brand> Brands { get; }
+	public IMongoSoftDelRepo<int, User, DateTimeOffset> Users { get; }
+	public IRepoBase<int, Direction> Directions { get; }
+	public IRepoBase<int, ProdCat1> ProdCats1 { get; }
+	public IRepoBase<int, ProdCat2> ProdCats2 { get; }
+	public IRepoBase<int, ProdCat3> ProdCats3 { get; }
+	public IRepoBase<int, Product> Products { get; }
+	public IRepoBase<int, Brand> Brands { get; }
 }

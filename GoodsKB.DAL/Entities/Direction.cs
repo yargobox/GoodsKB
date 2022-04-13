@@ -2,7 +2,7 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class Direction : IIdentifiableEntity<int>
+public class Direction : IIdentEntity<int>
 {
 	public int Id { get; set; }
 
