@@ -2,7 +2,7 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class User : IIdentEntity<int>, ISoftDelEntity<DateTimeOffset>
+public class User : IIdentifiableEntity<int>, ISoftDelEntity<DateTimeOffset>
 {
 	[IdentityPolicy(IdentityPolicies.Sequential)]
 	public int Id { get; set; }

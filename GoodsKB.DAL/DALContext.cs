@@ -8,12 +8,12 @@ namespace GoodsKB.DAL;
 public interface IDALContext
 {
 	IMongoSoftDelRepo<int, User, DateTimeOffset> Users { get; }
-	IRepoBase<int, Direction> Directions { get; }
-	IRepoBase<int, ProdCat1> ProdCats1 { get; }
-	IRepoBase<int, ProdCat2> ProdCats2 { get; }
-	IRepoBase<int, ProdCat3> ProdCats3 { get; }
-	IRepoBase<int, Product> Products { get; }
-	IRepoBase<int, Brand> Brands { get; }
+	IMongoSoftDelRepo<int, Direction, DateTimeOffset> Directions { get; }
+	IMongoSoftDelRepo<int, ProdCat1, DateTimeOffset> ProdCats1 { get; }
+	IMongoSoftDelRepo<int, ProdCat2, DateTimeOffset> ProdCats2 { get; }
+	IMongoSoftDelRepo<int, ProdCat3, DateTimeOffset> ProdCats3 { get; }
+	IMongoSoftDelRepo<int, Product, DateTimeOffset> Products { get; }
+	IMongoSoftDelRepo<int, Brand, DateTimeOffset> Brands { get; }
 }
 
 public class DALContext : IDALContext
@@ -30,10 +30,10 @@ public class DALContext : IDALContext
 	}
 
 	public IMongoSoftDelRepo<int, User, DateTimeOffset> Users { get; }
-	public IRepoBase<int, Direction> Directions { get; }
-	public IRepoBase<int, ProdCat1> ProdCats1 { get; }
-	public IRepoBase<int, ProdCat2> ProdCats2 { get; }
-	public IRepoBase<int, ProdCat3> ProdCats3 { get; }
-	public IRepoBase<int, Product> Products { get; }
-	public IRepoBase<int, Brand> Brands { get; }
+	public IMongoSoftDelRepo<int, Direction, DateTimeOffset> Directions { get; }
+	public IMongoSoftDelRepo<int, ProdCat1, DateTimeOffset> ProdCats1 { get; }
+	public IMongoSoftDelRepo<int, ProdCat2, DateTimeOffset> ProdCats2 { get; }
+	public IMongoSoftDelRepo<int, ProdCat3, DateTimeOffset> ProdCats3 { get; }
+	public IMongoSoftDelRepo<int, Product, DateTimeOffset> Products { get; }
+	public IMongoSoftDelRepo<int, Brand, DateTimeOffset> Brands { get; }
 }

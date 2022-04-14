@@ -3,7 +3,7 @@ using GoodsKB.DAL.Entities;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class ProductsRepo : MongoIntIdentityRepo<Product>
+internal class ProductsRepo : MongoSoftDelRepo<int, Product, DateTimeOffset>
 {
 	public ProductsRepo(IMongoDbContext context)
 		: base(context, "products")

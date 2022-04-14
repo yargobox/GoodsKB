@@ -67,7 +67,7 @@ public class UserService : IUserService
 		
 		//item.Password = _authService.HashPassword(newUser.Password);
 
-		return await _items.CreateAsync(item);
+		return (await _items.CreateAsync(item)).Id;
 	}
 
 	public async Task<IEnumerable<UserDto>> GetAsync()
@@ -115,10 +115,8 @@ public class UserService : IUserService
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 
-        if ((await _items.GetAsync(filter)).Where(x => x.Id != dto.Id).SingleOrDefault() != null)
+		if ((await _items.GetAsync(SoftDelModes.All, x => x.Id != id && (x.Username == username || x.Email == email || x.Phone == phone))).SingleOrDefault() != null)
 			throw new Conflict409Exception("The username, email or phone already exists");
-
-		var x = await _items.GetByCondition(x => x.Id != id && (x.Username == username || x.Email == email || x.Phone == phone));
 
 		var item = _mapper.Map<User>(dto);
 		item.Username = username;

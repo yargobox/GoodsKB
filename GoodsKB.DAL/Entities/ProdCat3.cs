@@ -2,10 +2,8 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class ProdCat3 : IIdentEntity<int>
+public class ProdCat3 : IIdentifiableEntity<int>, ISoftDelEntity<DateTimeOffset>
 {
-	public static readonly ProdCat3 Empty = new ProdCat3();
-
 	public int Id { get; set; }
 
 	public string? Name { get; set; }
@@ -14,6 +12,6 @@ public class ProdCat3 : IIdentEntity<int>
 	public virtual IEnumerable<Product> Products { get; set; } = new List<Product>();
 
 	public DateTimeOffset Created { get; set; }
-	public DateTimeOffset Updated { get; set; }
-	public DateTimeOffset Deleted { get; set; }
+	public DateTimeOffset? Updated { get; set; }
+	public DateTimeOffset? Deleted { get; set; }
 }
