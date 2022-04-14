@@ -18,3 +18,24 @@ internal static class Extensions
 		return Array.Empty<Type>();
 	}
 }
+
+internal static class AttributeExtensions
+{
+    public static bool HasAttribute<TAttribute>(this Type type)
+		where TAttribute : Attribute
+	{
+		var attr = type.GetCustomAttributes(typeof(TAttribute), true).FirstOrDefault() as TAttribute;
+		return attr != null;
+	}
+	public static TAttribute? GetAttribute<TAttribute>(this Type type)
+		where TAttribute : Attribute
+	{
+		return type.GetCustomAttributes(typeof(TAttribute), true).FirstOrDefault() as TAttribute;
+	}
+	public static TValue? GetAttributeValue<TAttribute, TValue>(this Type type, Func<TAttribute, TValue> valueSelector)
+		where TAttribute : Attribute
+	{
+		var attr = type.GetCustomAttributes(typeof(TAttribute), true).FirstOrDefault() as TAttribute;
+		return attr != null ? valueSelector(attr) : default(TValue);
+	}
+}

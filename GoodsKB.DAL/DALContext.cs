@@ -1,7 +1,7 @@
 using GoodsKB.DAL.Configuration;
 using GoodsKB.DAL.Entities;
-
 using GoodsKB.DAL.Repositories;
+using GoodsKB.DAL.Repositories.Mongo;
 
 namespace GoodsKB.DAL;
 

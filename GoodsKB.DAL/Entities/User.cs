@@ -4,7 +4,6 @@ namespace GoodsKB.DAL.Entities;
 
 public class User : IIdentifiableEntity<int>, ISoftDelEntity<DateTimeOffset>
 {
-	[IdentityPolicy(IdentityPolicies.Sequential)]
 	public int Id { get; set; }
 
 	public string Username { get; set; } = string.Empty;

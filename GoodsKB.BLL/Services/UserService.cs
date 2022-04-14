@@ -1,6 +1,7 @@
 using GoodsKB.DAL;
 using GoodsKB.DAL.Entities;
 using GoodsKB.DAL.Repositories;
+using GoodsKB.DAL.Repositories.Mongo;
 using GoodsKB.BLL.DTOs;
 using GoodsKB.BLL.Exceptions;
 using GoodsKB.BLL.Common;
