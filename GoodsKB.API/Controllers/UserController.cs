@@ -59,6 +59,13 @@ public class UserController : ControllerBase
 	public async Task<ActionResult> DeleteAsync(int id)
 	{
 		await _userService.DeleteAsync(id);
-			return NoContent();
-		}
+		return NoContent();
+	}
+
+	[HttpPatch("{id}")]
+	public async Task<ActionResult> RestoreAsync(int id)
+	{
+		await _userService.RestoreAsync(id);
+		return NoContent();
+	}
 }

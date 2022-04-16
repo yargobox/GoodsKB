@@ -1,11 +1,11 @@
+using AutoMapper;
+using GoodsKB.BLL.Common;
+using GoodsKB.BLL.DTOs;
+using GoodsKB.BLL.Exceptions;
 using GoodsKB.DAL;
 using GoodsKB.DAL.Entities;
 using GoodsKB.DAL.Repositories;
 using GoodsKB.DAL.Repositories.Mongo;
-using GoodsKB.BLL.DTOs;
-using GoodsKB.BLL.Exceptions;
-using GoodsKB.BLL.Common;
-using AutoMapper;
 
 namespace GoodsKB.BLL.Services;
 
@@ -16,6 +16,7 @@ public interface IUserService
 	Task<int> CreateAsync(UserCreateDto dto);
 	Task UpdateAsync(int id, UserUpdateDto dto);
 	Task DeleteAsync(int id);
+	Task RestoreAsync(int id);
 }
 
 public class UserService : IUserService
@@ -132,6 +133,13 @@ public class UserService : IUserService
 
 	public async Task DeleteAsync(int id)
 	{
-		await _items.DeleteAsync(id);
+		if (!await _items.DeleteAsync(id))
+			throw new NotFound404Exception();
+	}
+
+	public async Task RestoreAsync(int id)
+	{
+		if (!await _items.RestoreAsync(id))
+			throw new NotFound404Exception();
 	}
 }

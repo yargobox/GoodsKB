@@ -1,31 +1,45 @@
 using GoodsKB.DAL.Configuration;
 using GoodsKB.DAL.Entities;
 using GoodsKB.DAL.Repositories.Mongo;
-using MongoDB.Driver;
 
 namespace GoodsKB.DAL.Repositories;
 
-[SequentialIdentity]
 internal class UsersRepo : MongoSoftDelRepo<int, User, DateTimeOffset>
 {
 	public UsersRepo(IMongoDbContext context)
-		: base(context, "users")
+		: base(context, "users",
+			new SequenceIdentityProvider<int>(context, "users", 0, 1, x => x == 0)
+		)
 	{
 	}
 
-	protected override async void OnRepositoryCheck()
+	protected override async void OnLoad()
 	{
-		base.OnRepositoryCheck();
+		base.OnLoad();
 
 		var indexeNames = await GetIndexNames();
 
 		var indexName = "username_ux";
-		if ( !indexeNames.Contains(indexName) ) await CreateIndex(indexName, true, x => x.Username);
+		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Username);
 
 		indexName = "email_ux";
-		if ( !indexeNames.Contains(indexName) ) await CreateIndex(indexName, true, x => x.Email);
+		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Email);
 
 		indexName = "phone_ux";
-		if ( !indexeNames.Contains(indexName) ) await CreateIndex(indexName, true, x => x.Phone);
+		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Phone);
+	}
+}
+
+internal class TestRec : IIdentifiableEntity<string>, ISoftDelEntity<DateTimeOffset>
+{
+	public string Id { get; set; } = string.Empty;
+	public DateTimeOffset? Deleted { get; set; }
+}
+
+internal class TestRepo : MongoSoftDelRepo<string, TestRec, DateTimeOffset>
+{
+	public TestRepo(IMongoDbContext context)
+		: base(context, "tests")
+	{
 	}
 }

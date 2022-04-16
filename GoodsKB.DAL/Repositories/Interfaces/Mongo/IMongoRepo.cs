@@ -4,7 +4,6 @@ using MongoDB.Driver.Linq;
 namespace GoodsKB.DAL.Repositories.Mongo;
 
 public interface IMongoRepo<TKey, TEntity> : IRepoBase<TKey, TEntity>
-	where TKey : struct
 	where TEntity : IIdentifiableEntity<TKey>
 {
 	IMongoCollection<TEntity> MongoCollection { get; }

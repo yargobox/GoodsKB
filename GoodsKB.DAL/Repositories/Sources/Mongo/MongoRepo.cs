@@ -5,7 +5,6 @@ using MongoDB.Driver.Linq;
 namespace GoodsKB.DAL.Repositories.Mongo;
 
 internal class MongoRepo<TKey, TEntity> : MongoRepoBase<TKey, TEntity>, IMongoRepo<TKey, TEntity>
-	where TKey : struct
 	where TEntity : IIdentifiableEntity<TKey>
 {
 	public virtual IMongoCollection<TEntity> MongoCollection => _col;
@@ -16,8 +15,8 @@ internal class MongoRepo<TKey, TEntity> : MongoRepoBase<TKey, TEntity>, IMongoRe
 	public virtual ProjectionDefinitionBuilder<TEntity> Projection => _Projection;
 	public virtual IndexKeysDefinitionBuilder<TEntity> IndexKeys => _IndexKeys;
 
-	protected MongoRepo(IMongoDbContext context, string collectionName)
-		: base(context, collectionName)
+	protected MongoRepo(IMongoDbContext context, string collectionName, IIdentityProvider<TKey>? identityProvider = null)
+		: base(context, collectionName, identityProvider)
 	{
 	}
 

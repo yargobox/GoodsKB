@@ -4,7 +4,6 @@ using MongoDB.Driver.Linq;
 namespace GoodsKB.DAL.Repositories.Mongo;
 
 public interface IMongoSoftDelRepo<TKey, TEntity, TDateTime> : IMongoRepo<TKey, TEntity>, ISoftDelRepo<TKey, TEntity, TDateTime>
-	where TKey : struct
 	where TEntity : IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {

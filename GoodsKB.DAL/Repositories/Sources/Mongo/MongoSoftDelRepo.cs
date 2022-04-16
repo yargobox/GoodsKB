@@ -1,26 +1,25 @@
+using System.Linq.Expressions;
 using GoodsKB.DAL.Configuration;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-using System.Linq.Expressions;
 
 namespace GoodsKB.DAL.Repositories.Mongo;
 
-internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEntity>, IMongoSoftDelRepo<TKey, TEntity, TDateTime>
-	where TKey : struct
+internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEntity>, IMongoSoftDelRepo<TKey, TEntity, TDateTime>
 	where TEntity : IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	private readonly Func<TDateTime> _UtcNow;
 	public TDateTime UtcNow => _UtcNow();
 
-	protected MongoSoftDelRepo(IMongoDbContext context, string collectionName)
-		: base(context, collectionName)
+	protected MongoSoftDelRepo(IMongoDbContext context, string collectionName, IIdentityProvider<TKey>? identityProvider = null)
+		: base(context, collectionName, identityProvider)
 	{
 		if (typeof(TDateTime) == typeof(DateTime))
-			_UtcNow = () => (TDateTime) (object) DateTime.UtcNow;
+			_UtcNow = () => (TDateTime)(object)DateTime.UtcNow;
 		else if (typeof(TDateTime) == typeof(DateTimeOffset))
-			_UtcNow = () => (TDateTime) (object) DateTimeOffset.UtcNow;
+			_UtcNow = () => (TDateTime)(object)DateTimeOffset.UtcNow;
 		else
 			throw new NotSupportedException($"{typeof(TDateTime).Name} data type is not supported");
 	}
@@ -37,18 +36,18 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 
 	public override async Task<bool> DeleteAsync(TKey id)
 	{
-		var filter = _Filter.Eq(item => item.Id, id) & _Filter.Ne(x => x.Deleted, (TDateTime?) null);
-		var update = Builders<TEntity>.Update.Set(x => x.Deleted, UtcNow);
-		var options = new FindOneAndUpdateOptions<TEntity, TEntity> { IsUpsert = false, ReturnDocument = ReturnDocument.After };
+		var filter = _Filter.Eq(item => item.Id, id) & _Filter.Eq(x => x.Deleted, (TDateTime?)null);
+		var update = Builders<TEntity>.Update.CurrentDate(x => x.Deleted);
+		var options = new UpdateOptions { IsUpsert = false };
 
-		var result = await _col.FindOneAndUpdateAsync(filter, update, options);
-		return await Task.FromResult(result != null);
+		var result = await _col.UpdateOneAsync(filter, update, options);
+		return await Task.FromResult(result.ModifiedCount > 0);
 	}
 
 	public override async Task<long> DeleteAsync(Expression<Func<TEntity, bool>> filter)
 	{
 		var query = _col.AsQueryable<TEntity>().Where(x => x.Deleted == null).Where(filter).GetExecutionModel().ToBsonDocument();
-		var update = Builders<TEntity>.Update.Set(x => x.Deleted, UtcNow);
+		var update = Builders<TEntity>.Update.CurrentDate(x => x.Deleted);
 		var options = new UpdateOptions { IsUpsert = false };
 
 		var result = await _col.UpdateManyAsync(query, update, options);
@@ -64,7 +63,7 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 
 	public override async Task<IEnumerable<TEntity>> GetAsync(FilterDefinition<TEntity>? filter, SortDefinition<TEntity>? sort = null, int? limit = null, int? skip = null)
 	{
-		filter = filter == null ? _Filter.Ne(x => x.Deleted, (TDateTime?) null) : filter & _Filter.Ne(x => x.Deleted, (TDateTime?) null);
+		filter = filter == null ? _Filter.Ne(x => x.Deleted, (TDateTime?)null) : filter & _Filter.Ne(x => x.Deleted, (TDateTime?)null);
 		var options = new FindOptions<TEntity, TEntity>
 		{
 			Sort = sort,
@@ -77,7 +76,7 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 
 	public override async Task<IEnumerable<TEntityProjection>> GetAsync<TEntityProjection>(FilterDefinition<TEntity>? filter, ProjectionDefinition<TEntity, TEntityProjection> projection, SortDefinition<TEntity>? sort = null, int? limit = null, int? skip = null)
 	{
-		filter = filter == null ? _Filter.Ne(x => x.Deleted, (TDateTime?) null) : filter & _Filter.Ne(x => x.Deleted, (TDateTime?) null);
+		filter = filter == null ? _Filter.Ne(x => x.Deleted, (TDateTime?)null) : filter & _Filter.Ne(x => x.Deleted, (TDateTime?)null);
 		var options = new FindOptions<TEntity, TEntityProjection>
 		{
 			Projection = projection,
@@ -85,13 +84,13 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 			Limit = limit,
 			Skip = skip
 		};
-		
+
 		return await (await _col.FindAsync(filter, options)).ToListAsync();
 	}
 
 	public override async Task<long> UpdateAsync(FilterDefinition<TEntity> filter, UpdateDefinition<TEntity> update)
 	{
-		filter &= _Filter.Ne(x => x.Deleted, (TDateTime?) null);
+		filter &= _Filter.Ne(x => x.Deleted, (TDateTime?)null);
 		var options = new UpdateOptions { IsUpsert = false };
 
 		var result = await _col.UpdateManyAsync(filter, update, options);
@@ -109,9 +108,9 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 	{
 		FilterDefinition<TEntity> filter;
 		if (mode == SoftDelModes.Actual)
-			filter = _Filter.Eq(x => x.Id, id) & _Filter.Eq(x => x.Deleted, (TDateTime?) null);
+			filter = _Filter.Eq(x => x.Id, id) & _Filter.Eq(x => x.Deleted, (TDateTime?)null);
 		else if (mode == SoftDelModes.Deleted)
-			filter = _Filter.Eq(x => x.Id, id) & _Filter.Ne(x => x.Deleted, (TDateTime?) null);
+			filter = _Filter.Eq(x => x.Id, id) & _Filter.Ne(x => x.Deleted, (TDateTime?)null);
 		else
 			filter = _Filter.Eq(x => x.Id, id);
 
@@ -175,18 +174,18 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 
 	public virtual async Task<bool> RestoreAsync(TKey id)
 	{
-		var filter = _Filter.Eq(item => item.Id, id) & _Filter.Ne(x => x.Deleted, (TDateTime?) null);
-		var update = Builders<TEntity>.Update.Set(x => x.Deleted, (TDateTime?) null);
-		var options = new FindOneAndUpdateOptions<TEntity, TEntity> { IsUpsert = false, ReturnDocument = ReturnDocument.After };
+		var filter = _Filter.Eq(item => item.Id, id) & _Filter.Ne(x => x.Deleted, (TDateTime?)null);
+		var update = Builders<TEntity>.Update.Unset(x => x.Deleted);
+		var options = new UpdateOptions { IsUpsert = false };
 
-		var result = await _col.FindOneAndUpdateAsync(filter, update, options);
-		return await Task.FromResult(result != null);
+		var result = await _col.UpdateOneAsync(filter, update, options);
+		return await Task.FromResult(result.ModifiedCount > 0);
 	}
 
 	public virtual async Task<long> RestoreAsync(Expression<Func<TEntity, bool>> filter)
 	{
 		var query = _col.AsQueryable<TEntity>().Where(filter).Where(x => x.Deleted != null).GetExecutionModel().ToBsonDocument();
-		var update = Builders<TEntity>.Update.Set(x => x.Deleted, (TDateTime?) null);
+		var update = Builders<TEntity>.Update.Unset(x => x.Deleted);
 		var options = new UpdateOptions { IsUpsert = false };
 
 		var result = await _col.UpdateManyAsync(query, update, options);
@@ -204,9 +203,9 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 	{
 		if (filter == null) filter = _Filter.Empty;
 		if (mode == SoftDelModes.Actual)
-			filter &= _Filter.Eq(x => x.Deleted, (TDateTime?) null);
+			filter &= _Filter.Eq(x => x.Deleted, (TDateTime?)null);
 		else if (mode == SoftDelModes.Deleted)
-			filter &= _Filter.Ne(x => x.Deleted, (TDateTime?) null);
+			filter &= _Filter.Ne(x => x.Deleted, (TDateTime?)null);
 
 		var options = new FindOptions<TEntity, TEntity>
 		{
@@ -222,9 +221,9 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 	{
 		if (filter == null) filter = _Filter.Empty;
 		if (mode == SoftDelModes.Actual)
-			filter &= _Filter.Eq(x => x.Deleted, (TDateTime?) null);
+			filter &= _Filter.Eq(x => x.Deleted, (TDateTime?)null);
 		else if (mode == SoftDelModes.Deleted)
-			filter &= _Filter.Ne(x => x.Deleted, (TDateTime?) null);
+			filter &= _Filter.Ne(x => x.Deleted, (TDateTime?)null);
 
 		var options = new FindOptions<TEntity, TEntityProjection>
 		{
@@ -233,14 +232,14 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 			Limit = limit,
 			Skip = skip
 		};
-		
+
 		return await (await _col.FindAsync(filter, options)).ToListAsync();
 	}
 
 	public virtual async Task<long> RestoreAsync(FilterDefinition<TEntity> filter)
 	{
-		filter &= _Filter.Ne(x => x.Deleted, (TDateTime?) null);
-		var update = _Update.Set(x => x.Deleted, (TDateTime?) null);
+		filter &= _Filter.Ne(x => x.Deleted, (TDateTime?)null);
+		var update = _Update.Set(x => x.Deleted, (TDateTime?)null);
 		var options = new UpdateOptions { IsUpsert = false };
 		var result = await _col.UpdateManyAsync(filter, update, options);
 		return await Task.FromResult(result.ModifiedCount);
@@ -248,12 +247,14 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> :  MongoRepo<TKey, TEn
 
 	#endregion
 
-	protected override async void OnRepositoryCheck()
+	protected override async void OnLoad()
 	{
+		base.OnLoad();
+
 		var deletedIndexName = "deleted_ix";
-		
+
 		var indexeNames = await GetIndexNames();
-		if ( !indexeNames.Contains(deletedIndexName) )
+		if (!indexeNames.Contains(deletedIndexName))
 		{
 			var options = new CreateIndexOptions { Name = deletedIndexName, Unique = false };
 			var indexModel = new CreateIndexModel<TEntity>(IndexKeys.Descending(x => x.Deleted), options);
