@@ -7,7 +7,7 @@ public interface IMongoSoftDelRepo<TKey, TEntity, TDateTime> : IMongoRepo<TKey, 
 	where TEntity : IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
-	IMongoQueryable<TEntity> MongoEntitiesAll { get; }
+	IMongoQueryable<TEntity> GetMongoEntities(SoftDelModes mode);
 	Task<IEnumerable<TEntity>> GetAsync(SoftDelModes mode, FilterDefinition<TEntity>? filter, SortDefinition<TEntity>? sort = null, int? limit = null, int? skip = null);
 	Task<IEnumerable<TEntityProjection>> GetAsync<TEntityProjection>(SoftDelModes mode, FilterDefinition<TEntity>? filter, ProjectionDefinition<TEntity, TEntityProjection> projection, SortDefinition<TEntity>? sort = null, int? limit = null, int? skip = null);
 	Task<long> RestoreAsync(FilterDefinition<TEntity> filter);

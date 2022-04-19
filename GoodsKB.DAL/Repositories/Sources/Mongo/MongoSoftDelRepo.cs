@@ -29,6 +29,8 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEnt
 
 	public override IQueryable<TEntity> Entities => _col.AsQueryable<TEntity>().Where(x => x.Deleted == null);
 
+	public override async Task<long> GetCountAsync() => await GetCountAsync(SoftDelModes.Actual);
+
 	public override async Task<TEntity?> GetAsync(TKey id) => await GetAsync(SoftDelModes.Actual, id);
 
 	public override async Task<IEnumerable<TEntity>> GetAsync(Expression<Func<TEntity, bool>>? filter = null, int? limit = null)
@@ -102,7 +104,20 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEnt
 
 	#region ISoftDelRepo
 
-	public virtual IQueryable<TEntity> EntitiesAll => _col.AsQueryable<TEntity>();
+	public virtual IQueryable<TEntity> GetEntities(SoftDelModes mode) => GetMongoEntities(mode);
+
+	public virtual async Task<long> GetCountAsync(SoftDelModes mode)
+	{
+		FilterDefinition<TEntity> filter;
+		if (mode == SoftDelModes.Actual)
+			filter = _Filter.Eq(x => x.Deleted, (TDateTime?)null);
+		else if (mode == SoftDelModes.Deleted)
+			filter = _Filter.Ne(x => x.Deleted, (TDateTime?)null);
+		else
+			filter = _Filter.Empty;
+
+		return await _col.CountDocumentsAsync(filter);
+	}
 
 	public virtual async Task<TEntity?> GetAsync(SoftDelModes mode, TKey id)
 	{
@@ -119,57 +134,11 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEnt
 
 	public virtual async Task<IEnumerable<TEntity>> GetAsync(SoftDelModes mode, Expression<Func<TEntity, bool>>? filter = null, int? limit = null)
 	{
-		if (mode == SoftDelModes.Actual)
-		{
-			if (filter == null)
-			{
-				if (limit == null || limit < 0)
-					return await MongoEntitiesAll.Where(x => x.Deleted == null).ToListAsync();
-				else
-					return await MongoEntities.Where(x => x.Deleted == null).Take((int)limit).ToListAsync();
-			}
-			else
-			{
-				if (limit == null || limit < 0)
-					return await MongoEntities.Where(x => x.Deleted == null).Where(filter).ToListAsync();
-				else
-					return await MongoEntities.Where(x => x.Deleted == null).Where(filter).Take((int)limit).ToListAsync();
-			}
-		}
-		else if (mode == SoftDelModes.Deleted)
-		{
-			if (filter == null)
-			{
-				if (limit == null || limit < 0)
-					return await MongoEntitiesAll.Where(x => x.Deleted != null).ToListAsync();
-				else
-					return await MongoEntitiesAll.Where(x => x.Deleted != null).Take((int)limit).ToListAsync();
-			}
-			else
-			{
-				if (limit == null || limit < 0)
-					return await MongoEntitiesAll.Where(x => x.Deleted != null).Where(filter).ToListAsync();
-				else
-					return await MongoEntitiesAll.Where(x => x.Deleted != null).Where(filter).Take((int)limit).ToListAsync();
-			}
-		}
-		else
-		{
-			if (filter == null)
-			{
-				if (limit == null || limit < 0)
-					return await MongoEntitiesAll.ToListAsync();
-				else
-					return await MongoEntitiesAll.Take((int)limit).ToListAsync();
-			}
-			else
-			{
-				if (limit == null || limit < 0)
-					return await MongoEntitiesAll.Where(filter).ToListAsync();
-				else
-					return await MongoEntitiesAll.Where(filter).Take((int)limit).ToListAsync();
-			}
-		}
+		var query = 		GetMongoEntities(mode);
+		if (filter != null)	query.Where(filter);
+		if (limit >= 0)		query.Take((int)limit);
+		
+		return await query.ToListAsync();
 	}
 
 	public virtual async Task<bool> RestoreAsync(TKey id)
@@ -197,7 +166,15 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEnt
 
 	#region IMongoSoftDelRepo
 
-	public virtual IMongoQueryable<TEntity> MongoEntitiesAll => _col.AsQueryable<TEntity>();
+	public virtual IMongoQueryable<TEntity> GetMongoEntities(SoftDelModes mode)
+	{
+		if (mode == SoftDelModes.Actual)
+			return _col.AsQueryable<TEntity>().Where(x => x.Deleted == null);
+		else if (mode == SoftDelModes.Deleted)
+			return _col.AsQueryable<TEntity>().Where(x => x.Deleted != null);
+		else
+			return _col.AsQueryable<TEntity>();
+	}
 
 	public virtual async Task<IEnumerable<TEntity>> GetAsync(SoftDelModes mode, FilterDefinition<TEntity>? filter, SortDefinition<TEntity>? sort = null, int? limit = null, int? skip = null)
 	{

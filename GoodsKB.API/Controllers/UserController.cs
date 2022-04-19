@@ -1,8 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using AutoMapper;
+using GoodsKB.API.Models;
+using GoodsKB.BLL.Common;
 using GoodsKB.BLL.DTOs;
 using GoodsKB.BLL.Services;
-using GoodsKB.API.Models;
+using Microsoft.AspNetCore.Mvc;
+using SoftDelModes = GoodsKB.DAL.Repositories.SoftDelModes;
 
 namespace GoodsKB.API.Controllers;
 
@@ -23,11 +26,22 @@ public class UserController : ControllerBase
 	}
 
 	[HttpGet]
-	public async Task<IEnumerable<UserModel>> GetAsync()
+	[ProducesResponseType(typeof(PagedResponse<IEnumerable<UserModel>>), StatusCodes.Status200OK)]
+	public async Task<IActionResult> GetAsync(
+		[FromQuery] [StringLength(7)] string? delmode,
+		[FromQuery] [StringLength(4096)] string? filter,
+		[FromQuery] [StringLength(2048)] string? sort,
+		[FromQuery] [Range(1, 100)] int? pageSize,
+		[FromQuery] [Range(1, int.MaxValue)] int? pageNumber
+	)
 	{
-		var items = await _userService.GetAsync();
-		var mapped = _mapper.Map<IEnumerable<UserModel>>(items);
-		return await Task.FromResult(mapped);
+		var softDelMode = Extensions.ParseSoftDelMode(delmode);
+		var totalRecords = await _userService.GetCountAsync(softDelMode, null);
+
+		var items = await _userService.GetAsync(softDelMode, null, null, pageSize ?? 10, pageNumber ?? 1);
+		var mapped = _mapper.Map<IEnumerable<UserModel>>(items) ?? Enumerable.Empty<UserModel>();
+
+		return Ok(new PagedResponse<IEnumerable<UserModel>>(mapped, pageSize ?? 10, pageNumber ?? 1, (int) totalRecords));
 	}
 
 	[HttpGet("{id}")]
@@ -40,6 +54,7 @@ public class UserController : ControllerBase
 	}
 
 	[HttpPost]
+	[ValidateAntiForgeryToken]
 	public async Task<ActionResult<int>> CreateAsync([FromBody] UserCreateModel model)
 	{
 		var dto = _mapper.Map<UserCreateDto>(model);

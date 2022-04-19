@@ -6,12 +6,15 @@ using GoodsKB.DAL;
 using GoodsKB.DAL.Entities;
 using GoodsKB.DAL.Repositories;
 using GoodsKB.DAL.Repositories.Mongo;
+using MongoDB.Driver;
+using MongoDB.Driver.Linq;
 
 namespace GoodsKB.BLL.Services;
 
 public interface IUserService
 {
-	Task<IEnumerable<UserDto>> GetAsync();
+	Task<long> GetCountAsync(SoftDelModes mode, IEntityFilter<User>? filter);
+	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, IEntityFilter<User>? filter, IEntitySort<User>? sort, int pageSize, int pageNumber);
 	Task<UserDto> GetAsync(int id);
 	Task<int> CreateAsync(UserCreateDto dto);
 	Task UpdateAsync(int id, UserUpdateDto dto);
@@ -72,9 +75,48 @@ public class UserService : IUserService
 		return (await _items.CreateAsync(item)).Id;
 	}
 
-	public async Task<IEnumerable<UserDto>> GetAsync()
+	public async Task<long> GetCountAsync(SoftDelModes mode, IEntityFilter<User>? filter)
 	{
-		var items = await _items.GetAsync();
+		return await _items.GetCountAsync(mode);
+	}
+
+	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, IEntityFilter<User>? filter, IEntitySort<User>? sort, int pageSize, int pageNumber)
+	{
+		var query = _items.GetMongoEntities(mode);
+		//if (filter != null) filter.Apply(query);
+		if (sort != null) sort.Apply(query);
+
+		//query = (IMongoQueryable<User>) ((IQueryable<User>)query).Where(x => x.FirstName == "Максим");
+
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.Equal, x => x.Id, 1).Condition);
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.NotEqual, x => x.Id, 2).Condition);
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.Greater, x => x.Id, 3).Condition);
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.GreaterOrEqual, x => x.Id, 4).Condition);
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.Less, x => x.Id, 5).Condition);
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.LessOrEqual, x => x.Id, 6).Condition);
+		
+		query = query.Where(new FieldFilter<User, string>(FilterOperations.IsNull, x => x.LastName).Condition);
+		query = query.Where(new FieldFilter<User, string>(FilterOperations.IsNotNull, x => x.LastName).Condition);
+		query = query.Where(new FieldFilter<User, DateTimeOffset?>(FilterOperations.IsNull, x => x.Deleted).Condition);
+		query = query.Where(new FieldFilter<User, DateTimeOffset?>(FilterOperations.IsNotNull, x => x.Deleted).Condition);
+
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.Between, x => x.Id, 1, int.MaxValue).Condition);
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.NotBetween, x => x.Id, 7, 9).Condition);
+
+		var a = new int[] { 1, 2, 3, 7, 8, 100, 200, 300 };
+		query = query.Where(new FieldFilter<User, int>(FilterOperations.In, x => x.Id, a).Condition);
+		//query = query.Where(new FieldFilter<User, int>(FilterOperations.NotIn, x => x.Id, a).Condition);
+
+		/* var a = new int[] { 1, 2 };
+		query = query.Where(x => a.Contains(x.Id)); */
+		//query = query.Where(new FieldFilter<User, int>(FilterOperations.BitsAnd, x => x.Id, 8).Operator);
+		//query = query.Where(new FieldFilter<User, int>(FilterOperations.BitsOr, x => x.Id, 9).Operator);
+
+		query = (IMongoQueryable<User>) ((IQueryable<User>)query).Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
+		Console.WriteLine(query.GetExecutionModel().ToString());
+
+		var items = await query.ToListAsync();
 		var mapped = _mapper.Map<IEnumerable<UserDto>>(items);
 		return mapped;
 	}

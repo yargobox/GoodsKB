@@ -12,6 +12,7 @@ public interface IRepoBase<TKey, TEntity>
 {
 	IQueryable<TEntity> Entities { get; }
 	IIdentityProvider<TKey>? IdentityProvider { get; }
+	Task<long> GetCountAsync();
 	Task<TEntity> CreateAsync(TEntity entity);
 	Task<TEntity?> GetAsync(TKey id);
 	Task<IEnumerable<TEntity>> GetAsync(Expression<Func<TEntity, bool>>? filter = null, int? limit = null);

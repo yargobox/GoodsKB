@@ -40,6 +40,11 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 	protected ProjectionDefinitionBuilder<TEntity> _Projection => Builders<TEntity>.Projection;
 	protected IndexKeysDefinitionBuilder<TEntity> _IndexKeys => Builders<TEntity>.IndexKeys;
 
+	public virtual async Task<long> GetCountAsync()
+	{
+		return await _col.CountDocumentsAsync(_Filter.Empty);
+	}
+
 	public virtual async Task<TEntity> CreateAsync(TEntity entity)
 	{
 		if (IdentityProvider != null)
