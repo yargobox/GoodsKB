@@ -86,38 +86,71 @@ public class UserService : IUserService
 		//if (filter != null) filter.Apply(query);
 		if (sort != null) sort.Apply(query);
 
+		/* FieldFilterOperations f = FieldFilterOperations.CaseInsensitive | FieldFilterOperations.CaseInsensitiveInvariant;
+		var res = f.HasFlag(FieldFilterOperations.CaseInsensitive | FieldFilterOperations.CaseInsensitiveInvariant);
+		res = f.HasFlag(FieldFilterOperations.CaseInsensitive);
+		res = f.HasFlag(FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull); */
+
 		//query = (IMongoQueryable<User>) ((IQueryable<User>)query).Where(x => x.FirstName == "Максим");
 
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Equal, x => x.Id, 1).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotEqual, x => x.Id, 2).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Greater, x => x.Id, 3).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.GreaterOrEqual, x => x.Id, 4).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Less, x => x.Id, 5).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.LessOrEqual, x => x.Id, 6).Condition);
+		/* 		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Equal, x => x.Id, 1).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotEqual, x => x.Id, 2).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Greater, x => x.Id, 3).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.GreaterOrEqual, x => x.Id, 4).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Less, x => x.Id, 5).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.LessOrEqual, x => x.Id, 6).Condition);
+
+				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.IsNull, x => x.LastName).Condition);
+				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.IsNotNull, x => x.LastName).Condition);
+				query = query.Where(new FieldFilter<User, DateTimeOffset?>(FieldFilterOperations.IsNull, x => x.Deleted).Condition);
+				query = query.Where(new FieldFilter<User, DateTimeOffset?>(FieldFilterOperations.IsNotNull, x => x.Deleted).Condition);
+
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Between, x => x.Id, 1, int.MaxValue).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotBetween, x => x.Id, 7, 9).Condition);
+
+				var a = new int[] { 1, 2, 3, 7, 8, 100, 200, 300 };
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.In, x => x.Id, a).Condition);
+				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotIn, x => x.Id, a).Condition);
+
+				var s = new string?[] { "a", null, "ccc" };
+				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.In, x => x.FirstName, s).Condition);
+				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.NotIn, x => x.LastName, s).Condition);
+*/
+				/* query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Like, x => x.Username, "DM").Condition);
+				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.NotLike, x => x.Username, "DM").Condition);
+
+				query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.In, x => x.FirstName, new string?[] { "999", "888", null }).Condition); */
+
+		//query = query.Where(x => x.Username.ToLower() == "admin");
 		
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.IsNull, x => x.LastName).Condition);
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.IsNotNull, x => x.LastName).Condition);
-		query = query.Where(new FieldFilter<User, DateTimeOffset?>(FieldFilterOperations.IsNull, x => x.Deleted).Condition);
-		query = query.Where(new FieldFilter<User, DateTimeOffset?>(FieldFilterOperations.IsNotNull, x => x.Deleted).Condition);
 
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Between, x => x.Id, 1, int.MaxValue).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotBetween, x => x.Id, 7, 9).Condition);
+		/* 		query = query.Where(x => x.FirstName.ToLower().Contains("dm"));
+				query = query.Where(x => x.FirstName.ToLower().StartsWith("adm"));
+				query = query.Where(x => x.FirstName.ToLower().EndsWith("in")); */
 
-		var a = new int[] { 1, 2, 3, 7, 8, 100, 200, 300 };
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.In, x => x.Id, a).Condition);
-		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotIn, x => x.Id, a).Condition);
-
-		var s = new string?[] { "a", null, "ccc" };
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.In, x => x.FirstName, s).Condition);
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.NotIn, x => x.LastName, s).Condition);
-
-/* 		var a = new int[] { 1, 2, 3, 300 };
-		query = query.Where(x => a.Contains(x.Id));
-		query = query.Where(x => !a.Contains(x.Id)); */
+		/* 		var a = new int[] { 1, 2, 3, 300 };
+				query = query.Where(x => a.Contains(x.Id));
+				query = query.Where(x => !a.Contains(x.Id)); */
 		//query = query.Where(new FieldFilter<User, int>(FilterOperations.BitsAnd, x => x.Id, 8).Operator);
 		//query = query.Where(new FieldFilter<User, int>(FilterOperations.BitsOr, x => x.Id, 9).Operator);
 
-		query = (IMongoQueryable<User>) ((IQueryable<User>)query).Skip((pageNumber - 1) * pageSize).Take(pageSize);
+		//query = (IMongoQueryable<User>) ((IQueryable<User>)query).Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
+		//query = query.Where(x => x.FirstName == null || x.FirstName.ToLower() == "admin");
+		
+		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal, x => x.Username, "Admin").Condition);
+		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive, x => x.Username, "aDmin").Condition);
+		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull, x => x.Username, "adMin").Condition);
+		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal | FieldFilterOperations.TrueWhenNull, x => x.Username, "admIn").Condition);
+
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal, x => x.FirstName, "Admin").Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal, x => x.FirstName, (string?) null).Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive, x => x.FirstName, "aDmin").Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive, x => x.FirstName, (string?) null).Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull, x => x.FirstName, "adMin").Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.TrueWhenNull, x => x.FirstName, "admIn").Condition);
+		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition);
 
 		Console.WriteLine(query.GetExecutionModel().ToString());
 

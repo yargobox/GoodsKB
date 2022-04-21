@@ -21,9 +21,11 @@ public enum FieldFilterOperations
 	BitsAnd = 14,
 	BitsOr = 15,
 
-	TrueOnNull = 0x100000,
+	TrueWhenNull = 0x100000,
+	CaseInsensitive = 0x200000,
+	CaseInsensitiveInvariant = 0x400000,
 
-	Flags = TrueOnNull
+	Flags = TrueWhenNull | CaseInsensitive | CaseInsensitiveInvariant
 }
 
 public interface IFieldFilter<TEntity>
