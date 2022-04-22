@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace GoodsKB.DAL.Repositories;
 
-public enum FieldFilterOperations
+public enum FilterOperations
 {
 	Equal = 0,
 	NotEqual = 1,
@@ -31,7 +31,7 @@ public enum FieldFilterOperations
 public interface IFieldFilter<TEntity>
 	where TEntity : class
 {
-	public FieldFilterOperations Operation { get; }
+	public FilterOperations Operation { get; }
 	public string Name { get; }
 	public Type OperandType { get; }
 	Expression<Func<TEntity, bool>> Condition { get; }

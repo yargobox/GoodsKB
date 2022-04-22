@@ -82,75 +82,82 @@ public class UserService : IUserService
 
 	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, IFieldFilter<User>? filter, IEntitySort<User>? sort, int pageSize, int pageNumber)
 	{
-		var query = _items.GetMongoEntities(mode);
+		var query = _items.GetMongoEntities(SoftDelModes.All);//(mode);
 		//if (filter != null) filter.Apply(query);
 		if (sort != null) sort.Apply(query);
 
-		/* FieldFilterOperations f = FieldFilterOperations.CaseInsensitive | FieldFilterOperations.CaseInsensitiveInvariant;
-		var res = f.HasFlag(FieldFilterOperations.CaseInsensitive | FieldFilterOperations.CaseInsensitiveInvariant);
-		res = f.HasFlag(FieldFilterOperations.CaseInsensitive);
-		res = f.HasFlag(FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull); */
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal, x => x.Id, 1).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal, x => x.Updated, DateTimeOffset.UtcNow).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal, x => x.Updated, (DateTimeOffset?)null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.TrueWhenNull, x => x.Updated, DateTimeOffset.UtcNow).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal, x => x.Username, "Admin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.CaseInsensitive, x => x.Username, "aDmin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.CaseInsensitive | FilterOperations.TrueWhenNull, x => x.Username, "adMin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.TrueWhenNull, x => x.Username, "admIn").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal, x => x.FirstName, "Admin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.CaseInsensitive, x => x.FirstName, "aDmin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.CaseInsensitive, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.CaseInsensitive | FilterOperations.TrueWhenNull, x => x.FirstName, "adMin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.CaseInsensitive | FilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.TrueWhenNull, x => x.FirstName, "admIn").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Equal | FilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
 
-		//query = (IMongoQueryable<User>) ((IQueryable<User>)query).Where(x => x.FirstName == "Максим");
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual, x => x.Id, 1).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual, x => x.Updated, DateTimeOffset.UtcNow).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual, x => x.Updated, (DateTimeOffset?)null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.TrueWhenNull, x => x.Updated, DateTimeOffset.UtcNow).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual, x => x.Username, "Admin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.CaseInsensitive, x => x.Username, "aDmin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.CaseInsensitive | FilterOperations.TrueWhenNull, x => x.Username, "adMin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.TrueWhenNull, x => x.Username, "admIn").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual, x => x.FirstName, "Admin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.CaseInsensitive, x => x.FirstName, "aDmin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.CaseInsensitive, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.CaseInsensitive | FilterOperations.TrueWhenNull, x => x.FirstName, "adMin").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.CaseInsensitive | FilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.TrueWhenNull, x => x.FirstName, "admIn").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotEqual | FilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition).GetExecutionModel().ToString());
 
-		/* 		query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Equal, x => x.Id, 1).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotEqual, x => x.Id, 2).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Greater, x => x.Id, 3).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.GreaterOrEqual, x => x.Id, 4).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Less, x => x.Id, 5).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.LessOrEqual, x => x.Id, 6).Condition);
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Greater, x => x.Id, 3).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.GreaterOrEqual, x => x.Id, 4).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Less, x => x.Id, 5).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.LessOrEqual, x => x.Id, 6).Condition).GetExecutionModel().ToString());
 
-				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.IsNull, x => x.LastName).Condition);
-				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.IsNotNull, x => x.LastName).Condition);
-				query = query.Where(new FieldFilter<User, DateTimeOffset?>(FieldFilterOperations.IsNull, x => x.Deleted).Condition);
-				query = query.Where(new FieldFilter<User, DateTimeOffset?>(FieldFilterOperations.IsNotNull, x => x.Deleted).Condition);
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.IsNull, x => x.LastName).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.IsNotNull, x => x.LastName).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.IsNull, x => x.Deleted).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.IsNotNull, x => x.Deleted).Condition).GetExecutionModel().ToString());
 
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.Between, x => x.Id, 1, int.MaxValue).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotBetween, x => x.Id, 7, 9).Condition);
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Between, x => x.Id, 1, int.MaxValue).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Between | FilterOperations.TrueWhenNull, x => x.Updated,
+				new DateTimeOffset(2000, 8, 29, 4, 20, 57, TimeSpan.Zero),
+				new DateTimeOffset(2043, 01, 31, 12, 24, 19, TimeSpan.Zero)
+			).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotBetween, x => x.Id, 7, 9).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotBetween | FilterOperations.TrueWhenNull, x => x.Deleted,
+				new DateTimeOffset(2000, 8, 29, 4, 20, 57, TimeSpan.Zero),
+				new DateTimeOffset(2043, 01, 31, 12, 24, 19, TimeSpan.Zero)
+			).Condition).GetExecutionModel().ToString());
 
-				var a = new int[] { 1, 2, 3, 7, 8, 100, 200, 300 };
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.In, x => x.Id, a).Condition);
-				query = query.Where(new FieldFilter<User, int>(FieldFilterOperations.NotIn, x => x.Id, a).Condition);
+		var aint = new int[] { 1, 2, 3, 7, 8, 100, 200, 300 };
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.In, x => x.Id, aint).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotIn, x => x.Id, aint).Condition).GetExecutionModel().ToString());
 
-				var s = new string?[] { "a", null, "ccc" };
-				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.In, x => x.FirstName, s).Condition);
-				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.NotIn, x => x.LastName, s).Condition);
-*/
-				/* query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Like, x => x.Username, "DM").Condition);
-				query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.NotLike, x => x.Username, "DM").Condition);
+		var astr = new string?[] { "a", null, "ccc" };
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.In, x => x.FirstName, astr).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotIn, x => x.LastName, astr).Condition).GetExecutionModel().ToString());
 
-				query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.In, x => x.FirstName, new string?[] { "999", "888", null }).Condition); */
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Like, x => x.Username, "DM").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.Like | FilterOperations.CaseInsensitive, x => x.Username, "DM").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotLike, x => x.Username, "DM").Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.NotLike | FilterOperations.CaseInsensitiveInvariant, x => x.Username, "DM").Condition).GetExecutionModel().ToString());
 
-		//query = query.Where(x => x.Username.ToLower() == "admin");
-		
+		Console.WriteLine(query.Skip((pageNumber - 1) * pageSize).Take(pageSize).GetExecutionModel().ToString());
 
-		/* 		query = query.Where(x => x.FirstName.ToLower().Contains("dm"));
-				query = query.Where(x => x.FirstName.ToLower().StartsWith("adm"));
-				query = query.Where(x => x.FirstName.ToLower().EndsWith("in")); */
-
-		/* 		var a = new int[] { 1, 2, 3, 300 };
-				query = query.Where(x => a.Contains(x.Id));
-				query = query.Where(x => !a.Contains(x.Id)); */
-		//query = query.Where(new FieldFilter<User, int>(FilterOperations.BitsAnd, x => x.Id, 8).Operator);
-		//query = query.Where(new FieldFilter<User, int>(FilterOperations.BitsOr, x => x.Id, 9).Operator);
-
-		//query = (IMongoQueryable<User>) ((IQueryable<User>)query).Skip((pageNumber - 1) * pageSize).Take(pageSize);
-
-		//query = query.Where(x => x.FirstName == null || x.FirstName.ToLower() == "admin");
-		
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal, x => x.Username, "Admin").Condition);
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive, x => x.Username, "aDmin").Condition);
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull, x => x.Username, "adMin").Condition);
-		query = query.Where(new FieldFilter<User, string>(FieldFilterOperations.Equal | FieldFilterOperations.TrueWhenNull, x => x.Username, "admIn").Condition);
-
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal, x => x.FirstName, "Admin").Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal, x => x.FirstName, (string?) null).Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive, x => x.FirstName, "aDmin").Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive, x => x.FirstName, (string?) null).Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull, x => x.FirstName, "adMin").Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.CaseInsensitive | FieldFilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.TrueWhenNull, x => x.FirstName, "admIn").Condition);
-		query = query.Where(new FieldFilter<User, string?>(FieldFilterOperations.Equal | FieldFilterOperations.TrueWhenNull, x => x.FirstName, (string?) null).Condition);
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.BitsAnd, x => x.Id, 3).Condition).GetExecutionModel().ToString());
+		Console.WriteLine(query.Where(FieldFilter<User>.Create(FilterOperations.BitsOr, x => x.Id, 6).Condition).GetExecutionModel().ToString());
 
 		Console.WriteLine(query.GetExecutionModel().ToString());
 
