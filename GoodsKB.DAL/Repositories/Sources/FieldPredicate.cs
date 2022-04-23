@@ -3,83 +3,41 @@ using System.Reflection;
 
 namespace GoodsKB.DAL.Repositories;
 
-public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
-	where TEntity : class
+public static class FieldPredicate<TEntity>
 {
-	public FilterOperations Operation { get; }
-	public Type OperandType { get; }
-	public string Name { get; }
-	public Expression<Func<TEntity, bool>> Condition { get; }
-
 	static readonly ParameterExpression _itemParameter = Expression.Parameter(typeof(TEntity), "item");
 	static readonly MethodInfo _toLowerMethodInfo = typeof(string).GetMethod("ToLower", new Type[] { })!;
 	static readonly MethodInfo _toLowerInvariantMethodInfo = typeof(string).GetMethod("ToLowerInvariant", new Type[] { })!;
 	static readonly MethodInfo _containsMethodInfo = typeof(string).GetMethod("Contains", new Type[] { typeof(string) })!;
 
-	public FieldFilter(FilterOperations operation, Type operandType, string name, Expression<Func<TEntity, bool>> condition)
+	public static Expression Build<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left)
 	{
-		Operation = operation;
-		OperandType = operandType;
-		Name = name;
-		Condition = condition;
-	}
-
-	public static IFieldFilter<TEntity> Create<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left)
-	{
-		var propName = (
-				left.Body as MemberExpression ??
-				(left.Body as UnaryExpression)?.Operand as MemberExpression ??
-				((left.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
-			)?.Member.Name ?? throw new InvalidCastException();
-		var condition = Create<TField>(operation, propName);
-		return new FieldFilter<TEntity>(operation, typeof(TField), propName, condition);
-	}
-	private static Expression<Func<TEntity, bool>> Create<TField>(FilterOperations operation, string propName)
-	{
-		(int operandCount, bool isManyRightOperands, bool isCaseInsensitiveCompilant) = GetOperandsInfo(operation);
-		if (isManyRightOperands || operandCount != 1)
-			throw new InvalidOperationException($"The number of operands in the {operation.ToString()} filter of the \"{propName}\" field must be {operandCount}.");
-		if (!isCaseInsensitiveCompilant && (operation & (FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant)) != 0)
-			throw new InvalidOperationException($"The \"{propName}\" field is not a string data type and cannot support string comparison options in the filter.");
-
-		switch (operation & ~FilterOperations.Flags)
+		var propName = GetPropName(left);
+		switch (operation & FilterOperations.OperationMask)
 		{
 			case FilterOperations.IsNull:
 				{
 					var propMember = Expression.PropertyOrField(_itemParameter, propName);
 					var predicate = Expression.Equal(propMember, Expression.Constant(null, typeof(TField)));
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.IsNotNull:
 				{
 					var propMember = Expression.PropertyOrField(_itemParameter, propName);
 					var predicate = Expression.NotEqual(propMember, Expression.Constant(null, typeof(TField)));
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"The {(int)operation} filter operation is not supported.");
+				throw new InvalidOperationException("Wrong number of operands or the filter operation itself.");
 		}
 	}
 
-	public static IFieldFilter<TEntity> Create<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left, TField right)
+	public static Expression Build<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left, TField right)
 	{
-		var propName = (
-				left.Body as MemberExpression ??
-				(left.Body as UnaryExpression)?.Operand as MemberExpression ??
-				((left.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
-			)?.Member.Name ?? throw new InvalidCastException();
-		var condition = Create(operation, propName, right);
-		return new FieldFilter<TEntity>(operation, typeof(TField), propName, condition);
-	}
-	private static Expression<Func<TEntity, bool>> Create<TField>(FilterOperations operation, string propName, TField right)
-	{
-		(int operandCount, bool isManyRightOperands, bool isCaseInsensitiveCompilant) = GetOperandsInfo(operation);
-		if (isManyRightOperands || operandCount != 2)
-			throw new InvalidOperationException($"The number of operands in the {operation.ToString()} filter of the \"{propName}\" field must be {operandCount}.");
-		if (!isCaseInsensitiveCompilant && (operation & (FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant)) != 0)
-			throw new InvalidOperationException($"The \"{propName}\" field is not a string data type and cannot support string comparison options in the filter.");
-
-		switch (operation & ~FilterOperations.Flags)
+		var propName = GetPropName(left);
+		switch (operation & FilterOperations.OperationMask)
 		{
 			case FilterOperations.Equal:
 				{
@@ -115,7 +73,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 								predicate
 							);
 						}
-						return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						return predicate;
 					}
 					else
 					{
@@ -130,7 +89,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 								predicate
 							);
 						}
-						return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						return predicate;
 					}
 				}
 			case FilterOperations.NotEqual:
@@ -167,7 +127,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 								predicate
 							);
 						}
-						return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						return predicate;
 					}
 					else
 					{
@@ -182,7 +143,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 								predicate
 							);
 						}
-						return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+						return predicate;
 					}
 				}
 			case FilterOperations.Greater:
@@ -198,7 +160,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.GreaterOrEqual:
 				{
@@ -213,7 +176,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.Less:
 				{
@@ -228,7 +192,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.LessOrEqual:
 				{
@@ -243,7 +208,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.Like:
 			case FilterOperations.NotLike:
@@ -273,7 +239,7 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 
 						var rightConst = Expression.Constant(lowerCaseRight, typeof(TField));
 						var containsCall = Expression.Call(toLowerCall, _containsMethodInfo, rightConst);
-						predicate = (operation & ~FilterOperations.Flags) == FilterOperations.Like ?
+						predicate = (operation & ~FilterOperations.FlagMask) == FilterOperations.Like ?
 							containsCall :
 							Expression.Not(containsCall);
 					}
@@ -281,7 +247,7 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 					{
 						var rightConst = Expression.Constant(right, typeof(TField));
 						var containsCall = Expression.Call(propMember, _containsMethodInfo, rightConst);
-						predicate = (operation & ~FilterOperations.Flags) == FilterOperations.Like ?
+						predicate = (operation & ~FilterOperations.FlagMask) == FilterOperations.Like ?
 							containsCall :
 							Expression.Not(containsCall);
 					}
@@ -294,7 +260,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.BitsAnd:
 				{
@@ -311,7 +278,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.BitsOr:
 				{
@@ -329,32 +297,18 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"The {(int)operation} filter operation is not supported.");
+				throw new InvalidOperationException("Wrong number of operands or the filter operation itself.");
 		}
 	}
 
-	public static IFieldFilter<TEntity> Create<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left, TField right, TField secondRight)
+	public static Expression Build<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left, TField right, TField secondRight)
 	{
-		var propName = (
-				left.Body as MemberExpression ??
-				(left.Body as UnaryExpression)?.Operand as MemberExpression ??
-				((left.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
-			)?.Member.Name ?? throw new InvalidCastException();
-		var condition = Create(operation, propName, right, secondRight);
-		return new FieldFilter<TEntity>(operation, typeof(TField), propName, condition);
-	}
-	private static Expression<Func<TEntity, bool>> Create<TField>(FilterOperations operation, string propName, TField right, TField secondRight)
-	{
-		(int operandCount, bool isManyRightOperands, bool isCaseInsensitiveCompilant) = GetOperandsInfo(operation);
-		if (isManyRightOperands || operandCount != 3)
-			throw new InvalidOperationException($"The number of operands in the {operation.ToString()} filter of the \"{propName}\" field must be {operandCount}.");
-		if (!isCaseInsensitiveCompilant && (operation & (FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant)) != 0)
-			throw new InvalidOperationException($"The \"{propName}\" field is not a string data type and cannot support string comparison options in the filter.");
-
-		switch (operation & ~FilterOperations.Flags)
+		var propName = GetPropName(left);
+		switch (operation & FilterOperations.OperationMask)
 		{
 			case FilterOperations.Between:
 				{
@@ -372,7 +326,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.NotBetween:
 				{
@@ -390,39 +345,26 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 							predicate
 						);
 					}
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"The {(int)operation} filter operation is not supported.");
+				throw new InvalidOperationException("Wrong number of operands or the filter operation itself.");
 		}
 	}
 
-	public static IFieldFilter<TEntity> Create<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left, IEnumerable<TField> right)
+	public static Expression Build<TField>(FilterOperations operation, Expression<Func<TEntity, TField>> left, IEnumerable<TField> right)
 	{
-		var propName = (
-				left.Body as MemberExpression ??
-				(left.Body as UnaryExpression)?.Operand as MemberExpression ??
-				((left.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
-			)?.Member.Name ?? throw new InvalidCastException();
-		var condition = Create<TField>(operation, propName, right);
-		return new FieldFilter<TEntity>(operation, typeof(TField), propName, condition);
-	}
-	private static Expression<Func<TEntity, bool>> Create<TField>(FilterOperations operation, string propName, IEnumerable<TField> right)
-	{
-		(int operandCount, bool isManyRightOperands, bool isCaseInsensitiveCompilant) = GetOperandsInfo(operation);
-		if (!isManyRightOperands || operandCount != 1)
-			throw new InvalidOperationException($"The number of operands in the {operation.ToString()} filter of the \"{propName}\" field must be {operandCount}.");
-		if (!isCaseInsensitiveCompilant && (operation & (FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant)) != 0)
-			throw new InvalidOperationException($"The \"{propName}\" field is not a string data type and cannot support string comparison options in the filter.");
-
-		switch (operation & ~FilterOperations.Flags)
+		var propName = GetPropName(left);
+		switch (operation & FilterOperations.OperationMask)
 		{
 			case FilterOperations.In:
 				{
 					var propMember = Expression.PropertyOrField(_itemParameter, propName);
 					var rightConst = Expression.Constant(right, typeof(IEnumerable<TField>));
 					var predicate = Expression.Call(typeof(Enumerable), "Contains", new Type[] { typeof(TField) }, rightConst, propMember);
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			case FilterOperations.NotIn:
 				{
@@ -431,15 +373,16 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 					var predicate = Expression.Not(
 						Expression.Call(typeof(Enumerable), "Contains", new Type[] { typeof(TField) }, rightConst, propMember)
 					);
-					return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
+					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"The {(int)operation} filter operation is not supported.");
+				throw new InvalidOperationException("Wrong number of operands or the filter operation itself.");
 		}
 	}
 
-	public static (int operandCount, bool isManyRightOperands, bool isCaseInsensitiveCompilant) GetOperandsInfo(FilterOperations operation)
-		=> (operation & ~FilterOperations.Flags) switch
+	public static (int operandCount, bool isManyRightOperands, bool isCaseInsensitiveCompilant) GetOperandsInfo(FilterOperations operation) =>
+		(operation & FilterOperations.OperationMask) switch
 		{
 			FilterOperations.Equal => (2, false, true),
 			FilterOperations.NotEqual => (2, false, true),
@@ -449,8 +392,8 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 			FilterOperations.LessOrEqual => (2, false, false),
 			FilterOperations.IsNull => (1, false, false),
 			FilterOperations.IsNotNull => (1, false, false),
-			FilterOperations.In => (1, true, false),
-			FilterOperations.NotIn => (1, true, false),
+			FilterOperations.In => (2, true, false),
+			FilterOperations.NotIn => (2, true, false),
 			FilterOperations.Between => (3, false, false),
 			FilterOperations.NotBetween => (3, false, false),
 			FilterOperations.Like => (2, false, true),
@@ -459,4 +402,11 @@ public sealed class FieldFilter<TEntity> : IFieldFilter<TEntity>
 			FilterOperations.BitsOr => (2, false, false),
 			_ => throw new NotSupportedException($"The {operation.ToString()} filter by field operation is not supported.")
 		};
+
+	private static string GetPropName<TField>(Expression<Func<TEntity, TField>> memberSelector) =>
+		(
+			memberSelector.Body as MemberExpression ??
+			(memberSelector.Body as UnaryExpression)?.Operand as MemberExpression ??
+			((memberSelector.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
+		)?.Member.Name ?? throw new InvalidOperationException("Could not deduct a property name from the member selector.");
 }
