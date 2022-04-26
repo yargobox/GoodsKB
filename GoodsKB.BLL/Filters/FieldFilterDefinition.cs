@@ -1,17 +1,12 @@
+using System.Linq.Expressions;
 using GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.BLL.Services;
 
-public record struct FieldFilterItem(string Name)
+public sealed record FieldFilterDefinition(string Name, Type OperandType, Expression MemeberSelector)
 {
-	public FilterOperations Operation { get; init; } = FilterOperations.None;
-	public object? Value { get; init; } = null;
-}
-
-public sealed record FieldFilterDefinition(string Name, Type OperandType)
-{
-	public FilterOperations AllowedOperations { get; }
-	public bool EmptyToNull { get; }
-	public bool IsNullAllowed { get; }
-	public FieldFilterItem DefaultValue { get; }
+	public FilterOperations AllowedOperations { get; init; }
+	public bool IsNullAllowed { get; init; }
+	public bool EmptyToNull { get; init; }
+	public FilterOperations DefaultOperation { get; init; }
 }
