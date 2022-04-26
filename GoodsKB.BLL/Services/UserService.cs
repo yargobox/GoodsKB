@@ -2,19 +2,18 @@ using AutoMapper;
 using GoodsKB.BLL.Common;
 using GoodsKB.BLL.DTOs;
 using GoodsKB.BLL.Exceptions;
+using GoodsKB.DAL.Linq;
 using GoodsKB.DAL;
 using GoodsKB.DAL.Entities;
 using GoodsKB.DAL.Repositories;
 using GoodsKB.DAL.Repositories.Mongo;
-using MongoDB.Driver;
-using MongoDB.Driver.Linq;
 
 namespace GoodsKB.BLL.Services;
 
 public interface IUserService
 {
-	Task<long> GetCountAsync(SoftDelModes mode, IEnumerable<FieldFilterValue>? filter);
-	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, IEnumerable<FieldFilterValue>? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber);
+	Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter);
+	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber);
 	Task<UserDto> GetAsync(int id);
 	Task<int> CreateAsync(UserCreateDto dto);
 	Task UpdateAsync(int id, UserUpdateDto dto);
@@ -61,7 +60,7 @@ public class UserService : IUserService
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 
-        if ((await _items.GetAsync(filter)).FirstOrDefault() != null)
+		if ((await _items.GetAsync(filter)).FirstOrDefault() != null)
 			throw new Conflict409Exception("The username, email or phone already exists");
 
 		var item = _mapper.Map<User>(dto);
@@ -69,22 +68,33 @@ public class UserService : IUserService
 		item.Email = email;
 		item.Phone = phone;
 		item.Created = DateTimeOffset.UtcNow;
-		
+
 		//item.Password = _authService.HashPassword(newUser.Password);
 
 		return (await _items.CreateAsync(item)).Id;
 	}
 
-	public async Task<long> GetCountAsync(SoftDelModes mode, IEnumerable<FieldFilterValue>? filter)
+	public async Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter)
 	{
+		if (filter != null)
+		{
+			var query = _items.GetEntities(mode);//!!!
+		}
 		return await _items.GetCountAsync(mode);
 	}
 
-	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, IEnumerable<FieldFilterValue>? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber)
+	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber)
 	{
-		var query = _items.GetMongoEntities(SoftDelModes.All);//(mode);
+		var query = _items.GetEntities(mode);
 
+		if (filter != null)
+		{
+			query = query.Where(FiltersHelper<User>.BuildCondition(filter));
+		}
 
+		query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
+		//Console.WriteLine(((MongoDB.Driver.Linq.IMongoQueryable<User>)query).GetExecutionModel().ToString());
 
 		var items = await query.ToListAsync();
 		var mapped = _mapper.Map<IEnumerable<UserDto>>(items);
@@ -137,7 +147,7 @@ public class UserService : IUserService
 		item.Email = email;
 		item.Phone = phone;
 		item.Updated = DateTimeOffset.UtcNow;
-		
+
 		//item.Password = _authService.HashPassword(newUser.Password);
 
 		await _items.UpdateAsync(item);

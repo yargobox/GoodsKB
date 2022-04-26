@@ -37,12 +37,12 @@ public class UserController : ControllerBase
 	)
 	{
 		var softDelMode = Extensions.ParseSoftDelMode(delmode);
-		var filterParsed = FiltersHelper<User, UserModel>.SerializeFromString(filter);
+		var filterValues = FiltersHelper<User>.SerializeFromString<UserModel>(filter);
 		var sortParsed = (IEnumerable<FieldSortOrderItem>?)null;
 
-		var totalRecords = await _userService.GetCountAsync(softDelMode, filterParsed);
+		var totalRecords = await _userService.GetCountAsync(softDelMode, filterValues);
 
-		var items = await _userService.GetAsync(softDelMode, filterParsed, sortParsed, pageSize ?? 10, pageNumber ?? 1);
+		var items = await _userService.GetAsync(softDelMode, filterValues, sortParsed, pageSize ?? 10, pageNumber ?? 1);
 		var mapped = _mapper.Map<IEnumerable<UserModel>>(items) ?? Enumerable.Empty<UserModel>();
 
 		return Ok(new PagedResponse<IEnumerable<UserModel>>(mapped, pageSize ?? 10, pageNumber ?? 1, (int)totalRecords));

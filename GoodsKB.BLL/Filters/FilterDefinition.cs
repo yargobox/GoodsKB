@@ -3,7 +3,7 @@ using GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.BLL.Services;
 
-public sealed record FieldFilterDefinition(string Name, Type OperandType, Expression MemeberSelector)
+public sealed record FilterDefinition(string Name, Type OperandType, Expression MemeberSelector)
 {
 	public FilterOperations AllowedOperations { get; init; }
 	public bool IsNullAllowed { get; init; }

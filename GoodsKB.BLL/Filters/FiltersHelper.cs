@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using GoodsKB.BLL.Common;
@@ -7,141 +8,145 @@ using GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.BLL.Services;
 
-public static class FiltersHelper<TEntity, TDto>
+public static class FiltersHelper<TEntity>
 	where TEntity : class
-	where TDto : class
 {
-	public static ReadOnlyDictionary<string, FieldFilterDefinition> Definitions { get; }
-
-	static FiltersHelper()
+	private static class DefinitionHelper<TDto>
 	{
-		var filters = new Dictionary<string, FieldFilterDefinition>();
+		public static ReadOnlyDictionary<string, FilterDefinition> Definitions { get; }
 
-		foreach (var p in typeof(TDto)
-				// public non-static SET properties
-				.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
-				// with given attribute only
-				.Where(x => Attribute.IsDefined(x, typeof(UserFilterAttribute), true))
-				// return propSet and attr
-				.Select(x => (
-					entityProp: typeof(TEntity).GetProperty(x.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty) ??
-						throw new InvalidOperationException(@$"""{typeof(TEntity).Name}"" does not have property ""{x.Name}""."),
-					dtoProp: x,
-					attr: x.GetCustomAttribute<UserFilterAttribute>(true)!)
-				)
-		)
+		static DefinitionHelper()
 		{
-			var propType = p.entityProp.PropertyType;
+			var filters = new Dictionary<string, FilterDefinition>();
 
-			if (!propType.IsAssignableFrom(p.dtoProp.PropertyType))
+			foreach (var p in typeof(TDto)
+					// public non-static SET properties
+					.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
+					// with given attribute only
+					.Where(x => Attribute.IsDefined(x, typeof(UserFilterAttribute), true))
+					// return propSet and attr
+					.Select(x => (
+						entityProp: typeof(TEntity).GetProperty(x.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty) ??
+							throw new InvalidOperationException(@$"""{typeof(TEntity).Name}"" does not have property ""{x.Name}""."),
+						dtoProp: x,
+						attr: x.GetCustomAttribute<UserFilterAttribute>(true)!)
+					)
+			)
 			{
-				throw new InvalidOperationException($"{typeof(TEntity).Name}.{p.entityProp.Name} is not compatible with {typeof(TDto).Name}.{p.entityProp.Name}.");
-			}
+				var propType = p.entityProp.PropertyType;
 
-			var initials = p.attr.GetInitialValues();
-			bool isNullAllowed = p.entityProp.IsNullable() && p.dtoProp.IsNullable();
-			Type underType = p.entityProp.GetUnderlyingSystemType();
-
-			if (initials.isNullAllowed != null)
-			{
-				// The user can require a non-null filter value for nullable fields, but not vice versa.
-				isNullAllowed = isNullAllowed && (bool) initials.isNullAllowed;
-			}
-
-			FilterOperations allowed;
-			if (initials.allowed == null)
-			{
-				if (underType.IsEnum)
+				if (!propType.IsAssignableFrom(p.dtoProp.PropertyType))
 				{
-					allowed = FO.Equality | FO.Inclusion;
-					if (underType.IsDefined(typeof(FlagsAttribute)))
+					throw new InvalidOperationException($"{typeof(TEntity).Name}.{p.entityProp.Name} is not compatible with {typeof(TDto).Name}.{p.entityProp.Name}.");
+				}
+
+				var initials = p.attr.GetInitialValues();
+				bool isNullAllowed = p.entityProp.IsNullable() && p.dtoProp.IsNullable();
+				Type underType = p.entityProp.GetUnderlyingSystemType();
+
+				if (initials.isNullAllowed != null)
+				{
+					// The user can require a non-null filter value for nullable fields, but not vice versa.
+					isNullAllowed = isNullAllowed && (bool)initials.isNullAllowed;
+				}
+
+				FilterOperations allowed;
+				if (initials.allowed == null)
+				{
+					if (underType.IsEnum)
 					{
-						allowed |= FO.Bitwise;
+						allowed = FO.Equality | FO.Inclusion;
+						if (underType.IsDefined(typeof(FlagsAttribute)))
+						{
+							allowed |= FO.Bitwise;
+						}
+					}
+					else
+					{
+						allowed = FO.GetAllowed(underType);
+					}
+
+					if (isNullAllowed)
+					{
+						allowed |= FO.Nullability | FilterOperations.TrueWhenNull;
 					}
 				}
 				else
 				{
-					allowed = FO.GetAllowed(underType);
+					allowed = (FilterOperations)initials.allowed;
+					if (!isNullAllowed)
+					{
+						// The user is not allowed to perform nullable operations on non-nullable fields.
+						allowed &= ~FilterOperations.TrueWhenNull;
+					}
 				}
 
-				if (isNullAllowed)
+				if ((allowed & FO.All) == FilterOperations.None)
 				{
-					allowed |= FO.Nullability | FilterOperations.TrueWhenNull;
+					throw new InvalidOperationException($"No filter operation found for field {typeof(TDto).Name}.{p.dtoProp.Name}.");
 				}
-			}
-			else
-			{
-				allowed = (FilterOperations) initials.allowed;
-				if (!isNullAllowed)
+
+				FilterOperations defop;
+				if (initials.defaultOperation == null)
 				{
-					// The user is not allowed to perform nullable operations on non-nullable fields.
-					allowed &= ~FilterOperations.TrueWhenNull;
+					defop = FO.GetDefault(underType) & allowed;
 				}
-			}
-
-			if ((allowed & FO.All) == FilterOperations.None)
-			{
-				throw new InvalidOperationException($"No filter operation found for field {typeof(TDto).Name}.{p.dtoProp.Name}.");
-			}
-
-			FilterOperations defop;
-			if (initials.defaultOperation == null)
-			{
-				defop = FO.GetDefault(underType) & allowed;
-			}
-			else
-			{
-				defop = (FilterOperations)initials.defaultOperation & allowed;
-			}
-			if (defop == FilterOperations.None)
-			{
-				defop = FO.GetDefault(allowed);
-			}
-
-			bool emptyToNull;
-			if (initials.emptyToNull == null)
-			{
-				emptyToNull = isNullAllowed && underType == typeof(string);
-			}
-			else
-			{
-				emptyToNull = isNullAllowed && (bool)initials.emptyToNull;
-			}
-
-			var itemProperty = Expression.Parameter(p.entityProp.DeclaringType!, "item");
-			var propMember = Expression.PropertyOrField(itemProperty, p.entityProp.Name);
-			var memberSelector = Expression.Lambda(propMember, itemProperty);
-
-			filters.Add(p.entityProp.Name,
-				new FieldFilterDefinition(p.entityProp.Name, propType, memberSelector)
+				else
 				{
-					AllowedOperations = allowed,
-					IsNullAllowed = isNullAllowed,
-					EmptyToNull = emptyToNull,
-					DefaultOperation = defop
-				});
+					defop = (FilterOperations)initials.defaultOperation & allowed;
+				}
+				if (defop == FilterOperations.None)
+				{
+					defop = FO.GetDefault(allowed);
+				}
+
+				bool emptyToNull;
+				if (initials.emptyToNull == null)
+				{
+					emptyToNull = isNullAllowed && underType == typeof(string);
+				}
+				else
+				{
+					emptyToNull = isNullAllowed && (bool)initials.emptyToNull;
+				}
+
+				var itemProperty = Expression.Parameter(p.entityProp.DeclaringType!, "item");
+				var propMember = Expression.PropertyOrField(itemProperty, p.entityProp.Name);
+				var memberSelector = Expression.Lambda(propMember, itemProperty);
+
+				filters.Add(p.entityProp.Name,
+					new FilterDefinition(p.entityProp.Name, propType, memberSelector)
+					{
+						AllowedOperations = allowed,
+						IsNullAllowed = isNullAllowed,
+						EmptyToNull = emptyToNull,
+						DefaultOperation = defop
+					});
+			}
+
+			Definitions = new ReadOnlyDictionary<string, FilterDefinition>(filters);
 		}
-
-		Definitions = new ReadOnlyDictionary<string, FieldFilterDefinition>(filters);
 	}
 
-	public static IEnumerable<FieldFilterValue>? SerializeFromString(string? s)
+	public static FilterValues? SerializeFromString<TDto>(string? s)
+	{
+		throw new NotSupportedException();
+		var definitions = DefinitionHelper<TDto>.Definitions;
+		return new FilterValues(definitions, new FilterValue[] { new FilterValue("Id") { Operation = FilterOperations.Equal, Value = 2 } });
+	}
+	public static string? SerializeToString(FilterValues? items)
 	{
 		throw new NotSupportedException();
 	}
-	public static string? SerializeToString(IEnumerable<FieldFilterValue>? items)
-	{
-		throw new NotSupportedException();
-	}
 
-	public static Expression BuildConditionPredicate(IEnumerable<FieldFilterValue> items)
+	public static Expression BuildConditionPredicate(FilterValues values)
 	{
 		int total = 0;
-		var predicates = new Expression[items.Count()];
+		var predicates = new Expression[values.Values.Count()];
 
-		foreach (var item in items)
+		foreach (var item in values.Values)
 		{
-			var def = Definitions[item.Name];
+			var def = values.Definitions[item.Name];
 			var info = FieldPredicate<TEntity>.GetOperandsInfo(item.Operation);
 
 			if ((def.AllowedOperations & item.Operation) != item.Operation)
@@ -229,8 +234,12 @@ public static class FiltersHelper<TEntity, TDto>
 
 		return predicate;
 	}
-	public static Expression<Func<TEntity, bool>> BuildCondition(IEnumerable<FieldFilterValue> items)
+	
+	[return: NotNullIfNotNull("values")]
+	public static Expression<Func<TEntity, bool>>? BuildCondition(FilterValues? values)
 	{
-		return Expression.Lambda<Func<TEntity, bool>>(BuildConditionPredicate(items), FieldPredicate<TEntity>.EntityParameter);
+		return values != null ?
+			Expression.Lambda<Func<TEntity, bool>>(BuildConditionPredicate(values), FieldPredicate<TEntity>.EntityParameter) :
+			null;
 	}
 }
