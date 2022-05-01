@@ -46,6 +46,11 @@ public static class Extensions
 		throw new FormatException($"{s} is not valid SoftDelModes");
 	}
 
+	internal static IEnumerable<T> Then<T, T1>(this IEnumerable<T> _this, IEnumerable<T1> next) where T1 : T
+	{
+		foreach (var x in _this) yield return x;
+		foreach (var x in next) yield return x;
+	}
 
 	internal static Type GetUnderlyingSystemType(this PropertyInfo propertyInfo)
 	{

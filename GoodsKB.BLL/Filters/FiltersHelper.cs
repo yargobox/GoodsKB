@@ -141,7 +141,8 @@ public static class FiltersHelper<TEntity>
 		int total = 0;
 		var predicates = new Expression[values.Values.Count()];
 
-		foreach (var item in values.Values)
+		foreach (var item in values.Values.Where(x => x.Name.Equals("id", StringComparison.OrdinalIgnoreCase))
+						.Then(values.Values.Where(x => !x.Name.Equals("id", StringComparison.OrdinalIgnoreCase))))
 		{
 			var def = values.Definitions[item.Name];
 			var info = FieldPredicate<TEntity>.GetOperandsInfo(item.Operation);
@@ -281,27 +282,31 @@ public static class FiltersHelper<TEntity>
 	{
 		if (string.IsNullOrWhiteSpace(filter)) return null;
 
-		var filterStringValues = SplitStringAndUnescapeDelimiter('\\', ';', filter);
+		var filterStringValues = SplitStringAndUnescapeDelimiter('\\', ';', filter, true);
 		var filterValues = new FilterValue[filterStringValues.Length];
 		int i = 0;
 		var definitions = DefinitionHelper<TDto>.Definitions;
-		FilterDefinition? fd;
+		FilterOperations trueOperation;
 		foreach (var p in filterStringValues.Select(x => PrepareFilterValueFromString(x)))
 		{
+			FilterDefinition? fd;
 			if (!definitions.TryGetValue(p.name, out fd))
 			{
 				throw new InvalidOperationException($"Filter {p.name} is not found.");
 			}
-			if (	(fd.Allowed & p.operation) != p.operation && (
-						(p.operation & (FilterOperations.Like | FilterOperations.BitsOr)) == (FilterOperations.Like | FilterOperations.BitsOr) &&
-						(fd.Allowed & (FilterOperations.Like | FilterOperations.BitsOr)) == 0
-					)
-				)
+
+			trueOperation = p.operation;
+			if (trueOperation.HasFlag(FilterOperations.Like) && fd.Allowed.HasFlag(FilterOperations.BitsOr))
+			{
+				trueOperation = (p.operation & ~FilterOperations.Like) | FilterOperations.BitsOr;
+			}
+
+			if ((fd.Allowed & trueOperation) != trueOperation)
 			{
 				throw new InvalidOperationException($"Filter {fd.Name} does not support this operation or option.");
 			}
 
-			if ((p.operation & (FilterOperations.IsNull | FilterOperations.IsNotNull)) != 0)
+			if ((trueOperation & (FilterOperations.IsNull | FilterOperations.IsNotNull)) != 0)
 			{
 				if (!string.IsNullOrEmpty(p.arguments))
 				{
@@ -310,10 +315,10 @@ public static class FiltersHelper<TEntity>
 
 				filterValues[i++] = new FilterValue(fd.Name)
 				{
-					Operation = p.operation
+					Operation = trueOperation
 				};
 			}
-			else if ((p.operation & (
+			else if ((trueOperation & (
 					FilterOperations.Equal |
 					FilterOperations.NotEqual |
 					FilterOperations.Greater |
@@ -327,7 +332,7 @@ public static class FiltersHelper<TEntity>
 				)) != 0)
 			{
 				var value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
-				if (fd.EmptyToNull && string.IsNullOrEmpty((string?)value))
+				if (fd.EmptyToNull && (trueOperation & FO.Likewise) == 0 && string.IsNullOrEmpty((string?)value))
 				{
 					value = (string?)null;
 				}
@@ -338,13 +343,15 @@ public static class FiltersHelper<TEntity>
 
 				filterValues[i++] = new FilterValue(fd.Name)
 				{
-					Operation = p.operation,
+					Operation = trueOperation,
 					Value = value
 				};
 			}
-			else if ((p.operation & (FilterOperations.Between | FilterOperations.NotBetween)) != 0)
+			else if ((trueOperation & (FilterOperations.Between | FilterOperations.NotBetween)) != 0)
 			{
-				var arr = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!).Select(x => ParseFilterValue(fd.UnderlyingOperandType, x)).ToArray();
+				var arr = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!)
+					.Select(x => ParseFilterValue(fd.UnderlyingOperandType, x))
+					.ToArray();
 				if (!fd.IsNullAllowed && arr.Any(x => x == null))
 				{
 					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
@@ -356,14 +363,15 @@ public static class FiltersHelper<TEntity>
 
 				filterValues[i++] = new FilterValue(fd.Name)
 				{
-					Operation = p.operation,
+					Operation = trueOperation,
 					Value = arr.Length > 0 ? arr[0] : (string?)null,
 					Value2 = arr.Length > 1 ? arr[1] : (string?)null
 				};
 			}
-			else if ((p.operation & (FilterOperations.In | FilterOperations.NotIn)) != 0)
+			else if ((trueOperation & (FilterOperations.In | FilterOperations.NotIn)) != 0)
 			{
-				var arr1 = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!).Select(x => ParseFilterValue(fd.UnderlyingOperandType, x));
+				var arr1 = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!)
+					.Select(x => ParseFilterValue(fd.UnderlyingOperandType, x));
 				if (!fd.IsNullAllowed && arr1.Any(x => x == null))
 				{
 					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
@@ -374,7 +382,7 @@ public static class FiltersHelper<TEntity>
 
 				filterValues[i++] = new FilterValue(fd.Name)
 				{
-					Operation = p.operation,
+					Operation = trueOperation,
 					Value = arr2
 				};
 			}
@@ -401,12 +409,27 @@ public static class FiltersHelper<TEntity>
 			var m = _matchFilterValueFromString.Match(filterStringValue);
 			if (m.Success)
 			{
-				var fo = _operationNames[m.Groups[2].Value.ToLower()];
+				var direct = !(m.Groups[1].Value == "!");
+				var fo = m.Groups[4].Value switch
+				{
+					"=" => direct ? FilterOperations.Equal : FilterOperations.NotEqual,
+					":" => direct ? FilterOperations.In : FilterOperations.NotIn,
+					"-" => direct ? FilterOperations.Between : FilterOperations.NotBetween,
+					">" => direct ? FilterOperations.Greater : throw new FormatException(),
+					">=" => direct ? FilterOperations.GreaterOrEqual : throw new FormatException(),
+					"<" => direct ? FilterOperations.Less : throw new FormatException(),
+					"<=" => direct ? FilterOperations.LessOrEqual : throw new FormatException(),
+					"~" => direct ? FilterOperations.Like : FilterOperations.NotLike,
+					".=" => direct ? FilterOperations.BitsAnd : throw new FormatException(),
+					".~" => direct ? FilterOperations.BitsOr : throw new FormatException(),
+					"" => direct ? FilterOperations.IsNotNull : FilterOperations.IsNull,
+					_ => throw new FormatException()
+				};
 				var flags = m.Groups[3].Value.ToLower();
 				if (flags.Contains('i')) fo |= FilterOperations.CaseInsensitive;
 				else if (flags.Contains('v')) fo |= FilterOperations.CaseInsensitiveInvariant;
 				if (flags.Contains('n')) fo |= FilterOperations.TrueWhenNull;
-				return (m.Groups[1].Value, fo, m.Groups.Count > 4 ? m.Groups[4].Value : string.Empty);
+				return (m.Groups[2].Value, fo, m.Groups[5].Value);
 			}
 		}
 		catch (Exception ex)
@@ -423,11 +446,11 @@ public static class FiltersHelper<TEntity>
 	/// <param name="delimiter"></param>
 	/// <param name="input">An escaped input string in which the delimiter is escaped by two consecutive delimiter characters.</param>
 	/// <exception cref="FormatException"></exception>
-	private static string[] SplitStringAndUnescapeDelimiter(char escape, char delimiter, string input)
+	private static string[] SplitStringAndUnescapeDelimiter(char escape, char delimiter, string input, bool removeEmptyEntries = false)
 	{
 		if (!input.Contains(escape))
 		{
-			return input.Split(delimiter, StringSplitOptions.None);
+			return input.Split(delimiter, removeEmptyEntries ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
 		}
 
 		var escapeEscape = new string(escape, 2);
@@ -462,7 +485,7 @@ public static class FiltersHelper<TEntity>
 		}
 		list.Add(input.Substring(k, input.Length - k).Replace(escapeEscape, sescape).Replace(escapeDelimiter, sdelimiter));
 
-		return list.ToArray();
+		return list.Where(x => removeEmptyEntries ? x.Length > 0 : true).ToArray();
 	}
 	private static int ConsecutiveBackwordCharCount(string input, int startIndex, char charToCount)
 	{
@@ -482,7 +505,7 @@ public static class FiltersHelper<TEntity>
 	}
 
 	private static readonly Regex _matchFilterValueFromString =
-		new Regex(@"^([^-]+)-(eq|neq|lk|nlk|bw|nbw|in|nin|gt|gte|lt|lte|all|any|nl|nnl)((?:n|ni|nv|i|in|v|vn)?)(?:-(.*))?$", RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+		new Regex(@"^(\!?)([a-zA-z0-9_]+)((?:\|n|\|ni|\|nv|\|i|\|in|\|v|\|vn)?)(?:(=|:|-|>=|>|<=|<|~|\.=|\.~)(.*))?$", RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
 	private static readonly Dictionary<string, FilterOperations> _operationNames = new()
 	{
 		{ "eq", FilterOperations.Equal },
