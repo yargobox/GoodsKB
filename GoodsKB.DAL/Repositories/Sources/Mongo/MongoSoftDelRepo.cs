@@ -135,8 +135,8 @@ internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEnt
 	public virtual async Task<IEnumerable<TEntity>> GetAsync(SoftDelModes mode, Expression<Func<TEntity, bool>>? filter = null, int? limit = null)
 	{
 		var query = 		GetMongoEntities(mode);
-		if (filter != null)	query.Where(filter);
-		if (limit >= 0)		query.Take((int)limit);
+		if (filter != null)	query = query.Where(filter);
+		if (limit >= 0)		query = query.Take((int)limit);
 		
 		return await query.ToListAsync();
 	}

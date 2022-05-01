@@ -17,7 +17,7 @@ public class User : IIdentifiableEntity<int>, ISoftDelEntity<DateTimeOffset>
 	public string? EmailHash { get; set; }
 	public string? PhoneHash { get; set; }
 
-	public UserRoles? Roles { get; set; }
+	public virtual IEnumerable<UserRoles> Roles { get; set; } = new List<UserRoles>();
 	public virtual IEnumerable<Direction> Directions {get; set; } = new List<Direction>();
 
 	public DateTimeOffset Created { get; set; }

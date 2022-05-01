@@ -23,10 +23,10 @@ internal class UsersRepo : MongoSoftDelRepo<int, User, DateTimeOffset>
 		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Username);
 
 		indexName = "email_ux";
-		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Email);
+		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Email, false, null, x => x.Email != null);
 
 		indexName = "phone_ux";
-		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Phone);
+		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Phone, false, null, x => x.Phone != null);
 	}
 }
 

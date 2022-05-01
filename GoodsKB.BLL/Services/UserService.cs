@@ -1,10 +1,11 @@
+using System.Linq.Expressions;
 using AutoMapper;
 using GoodsKB.BLL.Common;
 using GoodsKB.BLL.DTOs;
 using GoodsKB.BLL.Exceptions;
-using GoodsKB.DAL.Linq;
 using GoodsKB.DAL;
 using GoodsKB.DAL.Entities;
+using GoodsKB.DAL.Linq;
 using GoodsKB.DAL.Repositories;
 using GoodsKB.DAL.Repositories.Mongo;
 
@@ -91,10 +92,9 @@ public class UserService : IUserService
 		{
 			query = query.Where(FiltersHelper<User>.BuildCondition(filter));
 		}
-
 		query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 
-		//Console.WriteLine(((MongoDB.Driver.Linq.IMongoQueryable<User>)query).GetExecutionModel().ToString());
+		Console.WriteLine(((MongoDB.Driver.Linq.IMongoQueryable<User>)query).GetExecutionModel().ToString());//!!!
 
 		var items = await query.ToListAsync();
 		var mapped = _mapper.Map<IEnumerable<UserDto>>(items);
@@ -111,8 +111,8 @@ public class UserService : IUserService
 
 	public async Task UpdateAsync(int id, UserUpdateDto dto)
 	{
-		var old = await _items.GetAsync(id);
-		if (old == null)
+		var item = await _items.GetAsync(id);
+		if (item == null)
 			throw new NotFound404Exception($"User {dto.Username} [{id}] does not exist or has been deleted.");
 
 		string? username = null;
@@ -129,20 +129,21 @@ public class UserService : IUserService
 		if (!string.IsNullOrWhiteSpace(dto.Phone))
 			phone = dto.Phone.ToPhoneNumber();
 
-		MongoDB.Driver.FilterDefinition<User> filter;
+		Expression<Func<User, bool>> filter;
 		if (email != null && phone != null)
-			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Email, email) | _items.Filter.Eq(x => x.Phone, phone);
+			filter = x => x.Id != id && (x.Username == username || x.Email == email || x.Phone == phone);
 		else if (email != null)
-			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Email, email);
+			filter = x => x.Id != id && (x.Username == username || x.Email == email);
 		else if (phone != null)
-			filter = _items.Filter.Eq(x => x.Username, username) | _items.Filter.Eq(x => x.Phone, phone);
+			filter = x => x.Id != id && (x.Username == username || x.Phone == phone);
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
+			
+		if ((await _items.GetAsync(SoftDelModes.All, filter)).FirstOrDefault() != null)
+			throw new Conflict409Exception("The username, email or phone already exist");
 
-		if ((await _items.GetAsync(SoftDelModes.All, x => x.Id != id && (x.Username == username || x.Email == email || x.Phone == phone))).SingleOrDefault() != null)
-			throw new Conflict409Exception("The username, email or phone already exists");
-
-		var item = _mapper.Map<User>(dto);
+		//var item = _mapper.Map<User>(dto);
+		item.Id = id;
 		item.Username = username;
 		item.Email = email;
 		item.Phone = phone;
@@ -150,7 +151,8 @@ public class UserService : IUserService
 
 		//item.Password = _authService.HashPassword(newUser.Password);
 
-		await _items.UpdateAsync(item);
+		if (!await _items.UpdateAsync(item))
+			throw new NotFound404Exception();
 	}
 
 	public async Task DeleteAsync(int id)

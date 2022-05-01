@@ -37,7 +37,7 @@ public class UserController : ControllerBase
 	)
 	{
 		var softDelMode = Extensions.ParseSoftDelMode(delmode);
-		var filterValues = FiltersHelper<User>.SerializeFromString<UserModel>(filter);
+		var filterValues = FiltersHelper<User>.SerializeFromString<UserModel>(filter ?? string.Empty);
 		var sortParsed = (IEnumerable<FieldSortOrderItem>?)null;
 
 		var totalRecords = await _userService.GetCountAsync(softDelMode, filterValues);
@@ -58,7 +58,7 @@ public class UserController : ControllerBase
 	}
 
 	[HttpPost]
-	[ValidateAntiForgeryToken]
+	//[ValidateAntiForgeryToken]
 	public async Task<ActionResult<int>> CreateAsync([FromBody] UserCreateModel model)
 	{
 		var dto = _mapper.Map<UserCreateDto>(model);

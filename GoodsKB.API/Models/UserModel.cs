@@ -1,5 +1,4 @@
 using GoodsKB.BLL.Services;
-using FilterOperations = GoodsKB.DAL.Repositories.FilterOperations;
 using UserRoles = GoodsKB.DAL.Entities.UserRoles;
 
 namespace GoodsKB.API.Models;
@@ -13,8 +12,7 @@ public class UserModel
 	[UserFilter] public string? Email { get; set; }
 	[UserFilter] public string? Phone { get; set; }
 	public string? Desc { get; set; }
-	//[BsonRepresentation(BsonType.String)]
-	[UserFilter] public UserRoles Roles { get; set; }
+	public virtual IEnumerable<UserRoles> Roles { get; set; } = new List<UserRoles>();
 	public virtual IEnumerable<DirectionModel> Directions {get; set; } = new List<DirectionModel>();
 	[UserFilter] public DateTimeOffset Created { get; set; }
 	[UserFilter] public DateTimeOffset? Updated { get; set; }

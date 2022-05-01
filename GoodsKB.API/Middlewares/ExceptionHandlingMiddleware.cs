@@ -19,6 +19,22 @@ public class ExceptionHandlingMiddleware
 		{
 			await _next(httpContext);
 		}
+		catch (FormatException ex)
+		{
+			await HandleExceptionAsync(httpContext, HttpStatusCode.BadRequest, ex);
+		}
+		catch (NotSupportedException ex)
+		{
+			await HandleExceptionAsync(httpContext, HttpStatusCode.BadRequest, ex);
+		}
+		catch (InvalidOperationException ex)
+		{
+			await HandleExceptionAsync(httpContext, HttpStatusCode.BadRequest, ex);
+		}
+		catch (ArgumentException ex)
+		{
+			await HandleExceptionAsync(httpContext, HttpStatusCode.BadRequest, ex);
+		}
 		catch (NotFound404Exception ex)
 		{
 			await HandleExceptionAsync(httpContext, HttpStatusCode.NotFound, ex);

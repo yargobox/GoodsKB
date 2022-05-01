@@ -41,14 +41,12 @@ public static class FieldPredicate<TEntity>
 				{
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
 					var predicate = Expression.Equal(propMember, Expression.Constant(null, operandType));
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.IsNotNull:
 				{
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
 					var predicate = Expression.NotEqual(propMember, Expression.Constant(null, operandType));
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			default:
@@ -96,7 +94,6 @@ public static class FieldPredicate<TEntity>
 								predicate
 							);
 						}
-						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 						return predicate;
 					}
 					else
@@ -112,7 +109,6 @@ public static class FieldPredicate<TEntity>
 								predicate
 							);
 						}
-						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 						return predicate;
 					}
 				}
@@ -150,7 +146,6 @@ public static class FieldPredicate<TEntity>
 								predicate
 							);
 						}
-						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 						return predicate;
 					}
 					else
@@ -166,7 +161,6 @@ public static class FieldPredicate<TEntity>
 								predicate
 							);
 						}
-						//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 						return predicate;
 					}
 				}
@@ -183,7 +177,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.GreaterOrEqual:
@@ -199,7 +192,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.Less:
@@ -215,7 +207,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.LessOrEqual:
@@ -231,7 +222,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.In:
@@ -240,7 +230,6 @@ public static class FieldPredicate<TEntity>
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
 					var rightConst = Expression.Constant(right, typeof(IEnumerable<>).MakeGenericType(operandType));
 					var predicate = Expression.Call(typeof(Enumerable), "Contains", new Type[] { operandType }, rightConst, propMember);
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.NotIn:
@@ -251,7 +240,6 @@ public static class FieldPredicate<TEntity>
 					var predicate = Expression.Not(
 						Expression.Call(typeof(Enumerable), "Contains", new Type[] { operandType }, rightConst, propMember)
 					);
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.Like:
@@ -282,7 +270,7 @@ public static class FieldPredicate<TEntity>
 
 						var rightConst = Expression.Constant(lowerCaseRight, operandType);
 						var containsCall = Expression.Call(toLowerCall, ContainsMethodInfo, rightConst);
-						predicate = (operation & FilterFlagMask) == FilterOperations.Like ?
+						predicate = operation.HasFlag(FilterOperations.Like) ?
 							containsCall :
 							Expression.Not(containsCall);
 					}
@@ -290,7 +278,7 @@ public static class FieldPredicate<TEntity>
 					{
 						var rightConst = Expression.Constant(right, operandType);
 						var containsCall = Expression.Call(propMember, ContainsMethodInfo, rightConst);
-						predicate = (operation & FilterFlagMask) == FilterOperations.Like ?
+						predicate = operation.HasFlag(FilterOperations.Like) ?
 							containsCall :
 							Expression.Not(containsCall);
 					}
@@ -303,7 +291,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.BitsAnd:
@@ -321,7 +308,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.BitsOr:
@@ -340,7 +326,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			default:
@@ -371,7 +356,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			case FilterOperations.NotBetween:
@@ -390,7 +374,6 @@ public static class FieldPredicate<TEntity>
 							predicate
 						);
 					}
-					//return Expression.Lambda<Func<TEntity, bool>>(predicate, _itemParameter);
 					return predicate;
 				}
 			default:

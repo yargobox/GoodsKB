@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using GoodsKB.BLL.Common;
 using GoodsKB.DAL.Repositories;
 
@@ -17,7 +19,7 @@ public static class FiltersHelper<TEntity>
 
 		static DefinitionHelper()
 		{
-			var filters = new Dictionary<string, FilterDefinition>();
+			var filters = new Dictionary<string, FilterDefinition>(StringComparer.OrdinalIgnoreCase);
 
 			foreach (var p in typeof(TDto)
 					// public non-static SET properties
@@ -115,12 +117,12 @@ public static class FiltersHelper<TEntity>
 				var memberSelector = Expression.Lambda(propMember, itemProperty);
 
 				filters.Add(p.entityProp.Name,
-					new FilterDefinition(p.entityProp.Name, propType, memberSelector)
+					new FilterDefinition(p.entityProp.Name, propType, underType, memberSelector)
 					{
-						AllowedOperations = allowed,
+						Allowed = allowed,
 						IsNullAllowed = isNullAllowed,
 						EmptyToNull = emptyToNull,
-						DefaultOperation = defop
+						Default = defop
 					});
 			}
 
@@ -128,15 +130,10 @@ public static class FiltersHelper<TEntity>
 		}
 	}
 
-	public static FilterValues? SerializeFromString<TDto>(string? s)
+	static FiltersHelper()
 	{
-		throw new NotSupportedException();
-		var definitions = DefinitionHelper<TDto>.Definitions;
-		return new FilterValues(definitions, new FilterValue[] { new FilterValue("Id") { Operation = FilterOperations.Equal, Value = 2 } });
-	}
-	public static string? SerializeToString(FilterValues? items)
-	{
-		throw new NotSupportedException();
+		_dotNumberFormatInvariantCulture = (CultureInfo) CultureInfo.InvariantCulture.Clone();
+		_dotNumberFormatInvariantCulture.NumberFormat.CurrencyDecimalSeparator = ".";
 	}
 
 	public static Expression BuildConditionPredicate(FilterValues values)
@@ -149,8 +146,10 @@ public static class FiltersHelper<TEntity>
 			var def = values.Definitions[item.Name];
 			var info = FieldPredicate<TEntity>.GetOperandsInfo(item.Operation);
 
-			if ((def.AllowedOperations & item.Operation) != item.Operation)
+			if ((def.Allowed & item.Operation) != item.Operation)
+			{
 				throw new InvalidOperationException(@$"Filter operation ""{item.Operation.ToString()}"" or its options is not allowed on field ""{def.Name}"".");
+			}
 
 			if (info.operandCount == 1)
 			{
@@ -187,7 +186,7 @@ public static class FiltersHelper<TEntity>
 
 				var buildMethod = typeof(FieldPredicate<>).MakeGenericType(typeof(TEntity))
 					.GetMethod("Build", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(FilterOperations), typeof(Type), typeof(string), def.OperandType }) ??
-					throw new InvalidCastException("Invalid filter arguments specified.");
+					throw new MissingMethodException("An appropriate method to build the filter is missing.");
 
 				predicates[total++] = (Expression)buildMethod.Invoke(null, new object?[] { item.Operation, def.OperandType, def.Name, item.Value })!;
 			}
@@ -215,7 +214,7 @@ public static class FiltersHelper<TEntity>
 
 				var buildMethod = typeof(FieldPredicate<>).MakeGenericType(typeof(TEntity))
 					.GetMethod("Build", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(FilterOperations), typeof(Type), typeof(string), def.OperandType, def.OperandType }) ??
-					throw new InvalidCastException("Invalid filter arguments specified.");
+					throw new MissingMethodException("An appropriate method to build the filter is missing.");
 
 				predicates[total++] = (Expression)buildMethod.Invoke(null, new object?[] { item.Operation, def.OperandType, def.Name, item.Value, item.Value2 })!;
 			}
@@ -234,7 +233,7 @@ public static class FiltersHelper<TEntity>
 
 		return predicate;
 	}
-	
+
 	[return: NotNullIfNotNull("values")]
 	public static Expression<Func<TEntity, bool>>? BuildCondition(FilterValues? values)
 	{
@@ -242,4 +241,316 @@ public static class FiltersHelper<TEntity>
 			Expression.Lambda<Func<TEntity, bool>>(BuildConditionPredicate(values), FieldPredicate<TEntity>.EntityParameter) :
 			null;
 	}
+
+	public static string? SerializeToString(FilterValues? items)
+	{
+		throw new NotSupportedException();
+	}
+	public static FilterValues? SerializeFromString<TDto>(string? filter)
+	{
+		if (string.IsNullOrWhiteSpace(filter)) return null;
+
+		var filterStringValues = SplitStringAndUnescapeDelimiter('\\', ';', filter);
+		var filterValues = new FilterValue[filterStringValues.Length];
+		int i = 0;
+		var definitions = DefinitionHelper<TDto>.Definitions;
+		FilterDefinition? fd;
+		foreach (var p in filterStringValues.Select(x => PrepareFilterValueFromString(x)))
+		{
+			if (!definitions.TryGetValue(p.name, out fd))
+			{
+				throw new InvalidOperationException($"Filter {p.name} is not found.");
+			}
+			if (	(fd.Allowed & p.operation) != p.operation && (
+						(p.operation & (FilterOperations.Like | FilterOperations.BitsOr)) == (FilterOperations.Like | FilterOperations.BitsOr) &&
+						(fd.Allowed & (FilterOperations.Like | FilterOperations.BitsOr)) == 0
+					)
+				)
+			{
+					throw new InvalidOperationException($"Filter {fd.Name} does not support this operation or option.");
+			}
+
+			if ((p.operation & (FilterOperations.IsNull | FilterOperations.IsNotNull)) != 0)
+			{
+				filterValues[i++] = new FilterValue(fd.Name)
+				{
+					Operation = p.operation
+				};
+			}
+			else if ((p.operation & (FilterOperations.Between | FilterOperations.NotBetween)) != 0)
+			{
+				var arr = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!);
+				if (arr.Length > 2)
+				{
+					throw new FormatException($"Operation Between of the {fd.Name} filter cannot have more than 2 arguments.");
+				}
+				if (!fd.IsNullAllowed && arr.Length < 2)
+				{
+					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+				}
+
+				filterValues[i++] = new FilterValue(fd.Name)
+				{
+					Operation = p.operation,
+					Value = ParseFilterValue(fd.UnderlyingOperandType, arr.Length > 0 ? arr[0] : (string?)null),
+					Value2 = ParseFilterValue(fd.UnderlyingOperandType, arr.Length > 1 ? arr[1] : (string?)null)
+				};
+			}
+			else if ((p.operation & (
+					FilterOperations.Equal |
+					FilterOperations.NotEqual |
+					FilterOperations.Greater |
+					FilterOperations.GreaterOrEqual |
+					FilterOperations.Less |
+					FilterOperations.LessOrEqual |
+					FilterOperations.NotLike |
+					FilterOperations.BitsAnd
+				)) != 0)
+			{
+				var value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
+				if (!fd.IsNullAllowed && value == null)
+				{
+					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+				}
+
+				filterValues[i++] = new FilterValue(fd.Name)
+				{
+					Operation = p.operation,
+					Value = value
+				};
+			}
+			else if ((p.operation & (FilterOperations.In | FilterOperations.NotIn)) != 0)
+			{
+				var arr1 = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!).Select(x => ParseFilterValue(fd.UnderlyingOperandType, x));
+				if (!fd.IsNullAllowed && arr1.Any(x => x == null))
+				{
+					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+				}
+
+				var castMethod = typeof(Enumerable).GetMethod("Cast")?.MakeGenericMethod(new[] { fd.OperandType });
+				var arr2 = castMethod!.Invoke(null, new object[] { arr1 });
+
+				filterValues[i++] = new FilterValue(fd.Name)
+				{
+					Operation = p.operation,
+					Value = arr2
+				};
+			}
+			else if ((p.operation & (FilterOperations.Like | FilterOperations.BitsOr)) == (FilterOperations.Like | FilterOperations.BitsOr))
+			{
+				var operation = p.operation;
+				object? value;
+
+				if (typeof(string).IsAssignableFrom(fd.UnderlyingOperandType))
+				{
+					operation &= ~FilterOperations.BitsOr;
+					value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
+					if (fd.EmptyToNull && ((string?)value)?.Length == 0)
+					{
+						value = (string?)null;
+					}
+				}
+				else
+				{
+					operation &= ~FilterOperations.Like;
+					value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
+				}
+
+				if (!fd.IsNullAllowed && value == null)
+				{
+					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+				}
+
+				filterValues[i++] = new FilterValue(fd.Name)
+				{
+					Operation = operation,
+					Value = value
+				};
+			}
+			else
+			{
+				throw new InvalidOperationException();
+			}
+		}
+
+		return new FilterValues(definitions, filterValues);
+	}
+
+	/// <summary>
+	/// Makes first parse step of a filter value string. It returns the argument(s) together as a single non-null string.
+	/// It does not recognize the Like and BitsOr operations. Both are returned as combination of Like | BitsOr.
+	/// The real operation in this case must be inferred from the field data type.
+	///
+	/// TrueWhenNull: [n]
+	/// CaseInsensitive: [i]
+	/// CaseInsensitiveInvariant: [I]
+	///
+	/// IsNotNull:		 {name}
+	/// IsNull:			!{name}
+	/// Equal:			 {name}[|f]=[arg1]
+	/// NotEqual:		!{name}[|f]=[arg1]
+	/// In:				 {name}:[[arg1],[arg2]...]
+	/// NotIn:			!{name}:[[arg1],[arg2]...]
+	/// Greater:		 {name}[|f]>[arg1]
+	/// GreaterOrEqual:	 {name}[|f]>=[arg1]
+	/// Less:			 {name}[|f]<[arg1]
+	/// LessOrEqual:	 {name}[|f]<=[arg1]
+	/// Between:		 {name}[|f]><[arg1],[arg2]
+	/// NotBetween:		!{name}[|f]><[arg1],[arg2]
+	/// Like:			 {name}[|f]~[arg1]
+	/// NotLike:		!{name}[|f]~[arg1]
+	/// BitsAnd:		 {name}[|f]=~[arg1]
+	/// BitsOr:			 {name}[|f]~[arg1]
+	/// </summary>
+	/// <param name="filterStringValue"></param>
+	/// <param name="matchTimeout"></param>
+	/// <exception cref="FormatException"></exception>
+	private static (string name, FilterOperations operation, string? arguments) PrepareFilterValueFromString(string filterStringValue)
+	{
+		try
+		{
+			var m = _matchFilterValueFromString.Match(filterStringValue);
+			if (m.Success)
+			{
+				var neagate = m.Groups[1].Value == "!";
+				var fo = FilterOperations.None;
+				if (m.Groups[3].Value.Contains('i')) fo |= FilterOperations.CaseInsensitive;
+				else if (m.Groups[3].Value.Contains('I')) fo |= FilterOperations.CaseInsensitiveInvariant;
+				if (m.Groups[3].Value.Contains('n')) fo |= FilterOperations.TrueWhenNull;
+				var oper = m.Groups.Count > 4 ? m.Groups[4].Value : string.Empty;
+				switch (oper)
+				{
+					case "":
+						if ((fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.IsNull : FilterOperations.IsNotNull), null);
+					case "=":
+						if ((fo & ~(FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant | FilterOperations.TrueWhenNull)) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotEqual : FilterOperations.Equal), m.Groups[5].Value);
+					case ":":
+						if ((fo & ~(FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant | FilterOperations.TrueWhenNull)) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotIn : FilterOperations.In), m.Groups[5].Value);
+					case ">":
+						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | FilterOperations.Greater, m.Groups[5].Value);
+					case ">=":
+						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | FilterOperations.GreaterOrEqual, m.Groups[5].Value);
+					case "<":
+						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | FilterOperations.Less, m.Groups[5].Value);
+					case "<=":
+						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | FilterOperations.LessOrEqual, m.Groups[5].Value);
+					case "><":
+						if ((fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotBetween : FilterOperations.Between), m.Groups[5].Value);
+					case "~":
+						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotLike : FilterOperations.Like | FilterOperations.BitsOr), m.Groups[5].Value);
+					case "=~":
+						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
+						return (m.Groups[2].Value, fo | FilterOperations.BitsAnd, m.Groups[5].Value);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			if (ex is FormatException) throw;
+			throw new FormatException(ex.Message, ex);
+		}
+		throw new FormatException();
+	}
+	
+	/// <summary>
+	/// Split string and unescape it by given delimiter character.
+	/// </summary>
+	/// <param name="delimiter"></param>
+	/// <param name="input">An escaped input string in which the delimiter is escaped by two consecutive delimiter characters.</param>
+	/// <exception cref="FormatException"></exception>
+	private static string[] SplitStringAndUnescapeDelimiter(char escape, char delimiter, string input)
+	{
+		if (!input.Contains(escape))
+		{
+			return input.Split(delimiter, StringSplitOptions.None);
+		}
+
+		var escapeEscape = new string(escape, 2);
+		var escapeDelimiter = string.Concat(escape, delimiter);
+		var sescape = new string(escape, 1);
+		var sdelimiter = new string(delimiter, 1);
+
+		var list = new List<string>();
+		int i = 0, j, k = 0;
+		while ((j = input.IndexOf(delimiter, i)) >= 0)
+		{
+			if (ConsecutiveBackwordCharCount(input, j - 1, escape) % 2 == 0)
+			{
+				if (j + 1 < input.Length)
+				{
+					list.Add(input.Substring(k, j - k).Replace(escapeEscape, sescape).Replace(escapeDelimiter, sdelimiter));
+					k = i = j + 1;
+				}
+				else
+				{
+					break;
+				}
+			}
+			else if (j + 1 < input.Length)
+			{
+				i = j + 1;
+			}
+			else
+			{
+				break;
+			}
+		}
+		list.Add(input.Substring(k, input.Length - k).Replace(escapeEscape, sescape).Replace(escapeDelimiter, sdelimiter));
+
+		return list.ToArray();
+	}
+	private static int ConsecutiveBackwordCharCount(string input, int startIndex, char charToCount)
+	{
+		int count = 0;
+		while (startIndex >= 0 && input[startIndex--] == charToCount) count++;
+		return count;
+	}
+
+	private static object? ParseFilterValue(Type operandType, string? value)
+	{
+		Func<string?, object?>? converter;
+		if (_parseFilterValueConverters.TryGetValue(operandType, out converter))
+		{
+			return converter(value);
+		}
+		throw new NotSupportedException($"Data type {operandType.Name} is not supported by filter.");
+	}
+
+	private static readonly Regex _matchFilterValueFromString =
+		new Regex(@"^(\!?)([a-zA-z0-9_]+)((?:\|n|\|ni|\|nI|\|i|\|in|\|I|\|In)?)(?:(=|:|>=|>|<=|<|~|><|~=)(.*))?$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(300));
+	private static readonly CultureInfo _dotNumberFormatInvariantCulture;
+	private static readonly Dictionary<Type, Func<string?, object?>> _parseFilterValueConverters = new ()
+	{
+		{ typeof(string), s => s },
+ 		{ typeof(char), s => string.IsNullOrEmpty(s) ? (char?)null : s[0] },
+
+		{ typeof(Guid), s => string.IsNullOrEmpty(s) ? (Guid?)null : Guid.Parse(s) },
+
+		{ typeof(byte), s => string.IsNullOrEmpty(s) ? (byte?)null : byte.Parse(s) },
+		{ typeof(sbyte), s => string.IsNullOrEmpty(s) ? (sbyte?)null : sbyte.Parse(s) },
+		{ typeof(short), s => string.IsNullOrEmpty(s) ? (short?)null : short.Parse(s) },
+		{ typeof(ushort), s => string.IsNullOrEmpty(s) ? (ushort?)null : ushort.Parse(s) },
+		{ typeof(int), s => string.IsNullOrEmpty(s) ? (int?)null : int.Parse(s) },
+		{ typeof(uint), s => string.IsNullOrEmpty(s) ? (uint?)null : uint.Parse(s) },
+		{ typeof(long), s => string.IsNullOrEmpty(s) ? (long?)null : long.Parse(s) },
+		{ typeof(ulong), s => string.IsNullOrEmpty(s) ? (ulong?)null : ulong.Parse(s) },
+
+		{ typeof(DateTime), s => string.IsNullOrEmpty(s) ? (DateTime?)null : DateTime.ParseExact(s, "yyyy-MM-ddTHH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
+		{ typeof(DateTimeOffset), s => string.IsNullOrEmpty(s) ? (DateTimeOffset?)null : DateTimeOffset.ParseExact(s, "yyyy-MM-ddTHH:mm:ss.FFFFFFFK", CultureInfo.InvariantCulture) },
+		{ typeof(DateOnly), s => string.IsNullOrEmpty(s) ? (DateOnly?)null : DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture) },
+		{ typeof(TimeOnly), s => string.IsNullOrEmpty(s) ? (TimeOnly?)null : TimeOnly.ParseExact(s, "HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
+		{ typeof(TimeSpan), s => string.IsNullOrEmpty(s) ? (TimeSpan?)null : TimeSpan.ParseExact(s, "d:hh:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
+
+		{ typeof(float), s => string.IsNullOrEmpty(s) ? (float?)null : float.Parse(s, NumberStyles.Float, _dotNumberFormatInvariantCulture) },
+		{ typeof(double), s => string.IsNullOrEmpty(s) ? (double?)null : double.Parse(s, NumberStyles.Float, _dotNumberFormatInvariantCulture) },
+		{ typeof(decimal), s => string.IsNullOrEmpty(s) ? (decimal?)null : decimal.Parse(s, NumberStyles.Integer | NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, _dotNumberFormatInvariantCulture) }
+	};
 }

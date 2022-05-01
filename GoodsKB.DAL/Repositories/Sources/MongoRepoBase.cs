@@ -119,10 +119,19 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 		var indexNames = (await (await _col.Indexes.ListAsync()).ToListAsync()).Select(x => (string)x["name"]);
 		return await Task.FromResult(indexNames);
 	}
-	protected async Task CreateIndex(string indexName, bool unique, Expression<Func<TEntity, object?>> filter, bool descending = false)
+	protected async Task CreateIndex(string indexName, bool unique, Expression<Func<TEntity, object?>> memberSelector, bool descending = false, Collation? collation = null, Expression<Func<TEntity, bool>>? filter = null)
 	{
-		var options = new CreateIndexOptions { Name = indexName, Unique = unique };
-		var indexModel = new CreateIndexModel<TEntity>(descending ? _IndexKeys.Descending(filter) : _IndexKeys.Ascending(filter), options);
+		var options = new CreateIndexOptions<TEntity>
+		{
+			Name = indexName,
+			Unique = unique,
+			Collation = collation ?? Collations.Ukrainian_CI_AI
+		};
+		if (filter != null)
+		{
+			options.PartialFilterExpression = _col.AsQueryable().Where(filter).GetExecutionModel().ToBsonDocument();
+		}
+		var indexModel = new CreateIndexModel<TEntity>(descending ? _IndexKeys.Descending(memberSelector) : _IndexKeys.Ascending(memberSelector), options);
 		await _col.Indexes.CreateOneAsync(indexModel, new CreateOneIndexOptions { });
 	}
 }

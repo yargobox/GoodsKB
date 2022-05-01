@@ -47,10 +47,7 @@ public static class Extensions
 	}
 
 
-	private const byte NonNullableContextValue = 1;
-	private const byte NullableContextValue = 2;
-
-	public static Type GetUnderlyingSystemType(this PropertyInfo propertyInfo)
+	internal static Type GetUnderlyingSystemType(this PropertyInfo propertyInfo)
 	{
 		var propertyType = propertyInfo.PropertyType;
 		
@@ -66,7 +63,7 @@ public static class Extensions
 		}
 	}
 
-	public static bool IsNullable(this PropertyInfo propertyInfo)
+	internal static bool IsNullable(this PropertyInfo propertyInfo)
 	{
 		var propertyType = propertyInfo.PropertyType;
 		
@@ -108,11 +105,11 @@ public static class Extensions
 		// nullableContext == 0 means context is null oblivious (Ex. Pre C#8)
 		// nullableContext == 1 means not nullable
 		// nullableContext == 2 means nullable
-		switch (propertyNullableContext)
+		switch ((byte)propertyNullableContext)
 		{
-			case NonNullableContextValue:
+			case 1:// NonNullableContextValue
 				return false;
-			case NullableContextValue:
+			case 2:// NullableContextValue
 				return true;
 			default:
 				throw new NotSupportedException();
