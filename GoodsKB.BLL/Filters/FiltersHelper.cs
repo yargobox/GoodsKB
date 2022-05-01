@@ -43,8 +43,8 @@ public static class FiltersHelper<TEntity>
 				}
 
 				var initials = p.attr.GetInitialValues();
-				bool isNullAllowed = p.entityProp.IsNullable() && p.dtoProp.IsNullable();
-				Type underType = p.entityProp.GetUnderlyingSystemType();
+				var isNullAllowed = p.entityProp.IsNullable() && p.dtoProp.IsNullable();
+				var underType = p.entityProp.GetUnderlyingSystemType();
 
 				if (initials.isNullAllowed != null)
 				{
@@ -246,6 +246,37 @@ public static class FiltersHelper<TEntity>
 	{
 		throw new NotSupportedException();
 	}
+
+	/// <summary>
+	/// 
+	/// Flags:
+	/// TrueWhenNull: [n]
+	/// CaseInsensitive: [i]
+	/// CaseInsensitiveInvariant: [v]
+	///
+	/// Operations:
+	/// IsNull:			nl[-n]|{name}
+	/// IsNotNull:		nnl[-n]|{name}
+	/// Equal:			eq[-niv]|{name}[|[arg1]]
+	/// NotEqual:		neq[-niv]|{name}[|[arg1]]
+	/// In:				in[-niv]|{name}[|[arg1],[arg2]...]
+	/// NotIn:			nin[-niv]|{name}[|[arg1],[arg2]...]
+	/// Greater:		gt[-n]|{name}[|[arg1]]
+	/// GreaterOrEqual:	gte[-n]|{name}[|[arg1]]
+	/// Less:			lt[-n]|{name}[|[arg1]]
+	/// LessOrEqual:	lte[-n]|{name}[|[arg1]]
+	/// Between:		bw[-n]|{name}|[arg1],[arg2]
+	/// NotBetween:		nbw[-n]|{name}|[arg1],[arg2]
+	/// Like:			lk[-niv]|{name}[|[arg1]]
+	/// NotLike:		nlk[-niv]|{name}[|[arg1]]
+	/// BitsAnd:		all[-n]|{name}[|[arg1]]
+	/// BitsOr:			any[-n]|{name}[|[arg1]]
+	/// </summary>
+	/// <typeparam name="TDto"></typeparam>
+	/// <param name="filter"></param>
+	/// <returns></returns>
+	/// <exception cref="InvalidOperationException"></exception>
+	/// <exception cref="FormatException"></exception>
 	public static FilterValues? SerializeFromString<TDto>(string? filter)
 	{
 		if (string.IsNullOrWhiteSpace(filter)) return null;
@@ -267,33 +298,19 @@ public static class FiltersHelper<TEntity>
 					)
 				)
 			{
-					throw new InvalidOperationException($"Filter {fd.Name} does not support this operation or option.");
+				throw new InvalidOperationException($"Filter {fd.Name} does not support this operation or option.");
 			}
 
 			if ((p.operation & (FilterOperations.IsNull | FilterOperations.IsNotNull)) != 0)
 			{
-				filterValues[i++] = new FilterValue(fd.Name)
+				if (!string.IsNullOrEmpty(p.arguments))
 				{
-					Operation = p.operation
-				};
-			}
-			else if ((p.operation & (FilterOperations.Between | FilterOperations.NotBetween)) != 0)
-			{
-				var arr = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!);
-				if (arr.Length > 2)
-				{
-					throw new FormatException($"Operation Between of the {fd.Name} filter cannot have more than 2 arguments.");
-				}
-				if (!fd.IsNullAllowed && arr.Length < 2)
-				{
-					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+					throw new FormatException($"Operation IsNull of the {fd.Name} filter cannot have arguments.");
 				}
 
 				filterValues[i++] = new FilterValue(fd.Name)
 				{
-					Operation = p.operation,
-					Value = ParseFilterValue(fd.UnderlyingOperandType, arr.Length > 0 ? arr[0] : (string?)null),
-					Value2 = ParseFilterValue(fd.UnderlyingOperandType, arr.Length > 1 ? arr[1] : (string?)null)
+					Operation = p.operation
 				};
 			}
 			else if ((p.operation & (
@@ -303,11 +320,17 @@ public static class FiltersHelper<TEntity>
 					FilterOperations.GreaterOrEqual |
 					FilterOperations.Less |
 					FilterOperations.LessOrEqual |
+					FilterOperations.Like |
 					FilterOperations.NotLike |
-					FilterOperations.BitsAnd
+					FilterOperations.BitsAnd |
+					FilterOperations.BitsOr
 				)) != 0)
 			{
 				var value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
+				if (fd.EmptyToNull && string.IsNullOrEmpty((string?)value))
+				{
+					value = (string?)null;
+				}
 				if (!fd.IsNullAllowed && value == null)
 				{
 					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
@@ -317,6 +340,25 @@ public static class FiltersHelper<TEntity>
 				{
 					Operation = p.operation,
 					Value = value
+				};
+			}
+			else if ((p.operation & (FilterOperations.Between | FilterOperations.NotBetween)) != 0)
+			{
+				var arr = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!).Select(x => ParseFilterValue(fd.UnderlyingOperandType, x)).ToArray();
+				if (!fd.IsNullAllowed && arr.Any(x => x == null))
+				{
+					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+				}
+				if (arr.Length > 2)
+				{
+					throw new FormatException($"Operation Between of the {fd.Name} filter must have 2 arguments.");
+				}
+
+				filterValues[i++] = new FilterValue(fd.Name)
+				{
+					Operation = p.operation,
+					Value = arr.Length > 0 ? arr[0] : (string?)null,
+					Value2 = arr.Length > 1 ? arr[1] : (string?)null
 				};
 			}
 			else if ((p.operation & (FilterOperations.In | FilterOperations.NotIn)) != 0)
@@ -336,37 +378,6 @@ public static class FiltersHelper<TEntity>
 					Value = arr2
 				};
 			}
-			else if ((p.operation & (FilterOperations.Like | FilterOperations.BitsOr)) == (FilterOperations.Like | FilterOperations.BitsOr))
-			{
-				var operation = p.operation;
-				object? value;
-
-				if (typeof(string).IsAssignableFrom(fd.UnderlyingOperandType))
-				{
-					operation &= ~FilterOperations.BitsOr;
-					value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
-					if (fd.EmptyToNull && ((string?)value)?.Length == 0)
-					{
-						value = (string?)null;
-					}
-				}
-				else
-				{
-					operation &= ~FilterOperations.Like;
-					value = ParseFilterValue(fd.UnderlyingOperandType, p.arguments);
-				}
-
-				if (!fd.IsNullAllowed && value == null)
-				{
-					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
-				}
-
-				filterValues[i++] = new FilterValue(fd.Name)
-				{
-					Operation = operation,
-					Value = value
-				};
-			}
 			else
 			{
 				throw new InvalidOperationException();
@@ -377,30 +388,8 @@ public static class FiltersHelper<TEntity>
 	}
 
 	/// <summary>
-	/// Makes first parse step of a filter value string. It returns the argument(s) together as a single non-null string.
-	/// It does not recognize the Like and BitsOr operations. Both are returned as combination of Like | BitsOr.
-	/// The real operation in this case must be inferred from the field data type.
-	///
-	/// TrueWhenNull: [n]
-	/// CaseInsensitive: [i]
-	/// CaseInsensitiveInvariant: [I]
-	///
-	/// IsNotNull:		 {name}
-	/// IsNull:			!{name}
-	/// Equal:			 {name}[|f]=[arg1]
-	/// NotEqual:		!{name}[|f]=[arg1]
-	/// In:				 {name}:[[arg1],[arg2]...]
-	/// NotIn:			!{name}:[[arg1],[arg2]...]
-	/// Greater:		 {name}[|f]>[arg1]
-	/// GreaterOrEqual:	 {name}[|f]>=[arg1]
-	/// Less:			 {name}[|f]<[arg1]
-	/// LessOrEqual:	 {name}[|f]<=[arg1]
-	/// Between:		 {name}[|f]><[arg1],[arg2]
-	/// NotBetween:		!{name}[|f]><[arg1],[arg2]
-	/// Like:			 {name}[|f]~[arg1]
-	/// NotLike:		!{name}[|f]~[arg1]
-	/// BitsAnd:		 {name}[|f]=~[arg1]
-	/// BitsOr:			 {name}[|f]~[arg1]
+	/// Takes the first step of parsing the filter value string.
+	/// It returns the argument(s) together as a single non-null string and does not check supported flags by operation or arguments.
 	/// </summary>
 	/// <param name="filterStringValue"></param>
 	/// <param name="matchTimeout"></param>
@@ -412,44 +401,12 @@ public static class FiltersHelper<TEntity>
 			var m = _matchFilterValueFromString.Match(filterStringValue);
 			if (m.Success)
 			{
-				var neagate = m.Groups[1].Value == "!";
-				var fo = FilterOperations.None;
-				if (m.Groups[3].Value.Contains('i')) fo |= FilterOperations.CaseInsensitive;
-				else if (m.Groups[3].Value.Contains('I')) fo |= FilterOperations.CaseInsensitiveInvariant;
-				if (m.Groups[3].Value.Contains('n')) fo |= FilterOperations.TrueWhenNull;
-				var oper = m.Groups.Count > 4 ? m.Groups[4].Value : string.Empty;
-				switch (oper)
-				{
-					case "":
-						if ((fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.IsNull : FilterOperations.IsNotNull), null);
-					case "=":
-						if ((fo & ~(FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant | FilterOperations.TrueWhenNull)) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotEqual : FilterOperations.Equal), m.Groups[5].Value);
-					case ":":
-						if ((fo & ~(FilterOperations.CaseInsensitive | FilterOperations.CaseInsensitiveInvariant | FilterOperations.TrueWhenNull)) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotIn : FilterOperations.In), m.Groups[5].Value);
-					case ">":
-						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | FilterOperations.Greater, m.Groups[5].Value);
-					case ">=":
-						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | FilterOperations.GreaterOrEqual, m.Groups[5].Value);
-					case "<":
-						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | FilterOperations.Less, m.Groups[5].Value);
-					case "<=":
-						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | FilterOperations.LessOrEqual, m.Groups[5].Value);
-					case "><":
-						if ((fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotBetween : FilterOperations.Between), m.Groups[5].Value);
-					case "~":
-						return (m.Groups[2].Value, fo | (neagate ? FilterOperations.NotLike : FilterOperations.Like | FilterOperations.BitsOr), m.Groups[5].Value);
-					case "=~":
-						if (neagate || (fo & ~FilterOperations.TrueWhenNull) != 0) throw new FormatException();
-						return (m.Groups[2].Value, fo | FilterOperations.BitsAnd, m.Groups[5].Value);
-				}
+				var fo = _operationNames[m.Groups[2].Value.ToLower()];
+				var flags = m.Groups[3].Value.ToLower();
+				if (flags.Contains('i')) fo |= FilterOperations.CaseInsensitive;
+				else if (flags.Contains('v')) fo |= FilterOperations.CaseInsensitiveInvariant;
+				if (flags.Contains('n')) fo |= FilterOperations.TrueWhenNull;
+				return (m.Groups[1].Value, fo, m.Groups.Count > 4 ? m.Groups[4].Value : string.Empty);
 			}
 		}
 		catch (Exception ex)
@@ -525,7 +482,26 @@ public static class FiltersHelper<TEntity>
 	}
 
 	private static readonly Regex _matchFilterValueFromString =
-		new Regex(@"^(\!?)([a-zA-z0-9_]+)((?:\|n|\|ni|\|nI|\|i|\|in|\|I|\|In)?)(?:(=|:|>=|>|<=|<|~|><|~=)(.*))?$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(300));
+		new Regex(@"^([^-]+)-(eq|neq|lk|nlk|bw|nbw|in|nin|gt|gte|lt|lte|all|any|nl|nnl)((?:n|ni|nv|i|in|v|vn)?)(?:-(.*))?$", RegexOptions.Compiled | RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(300));
+	private static readonly Dictionary<string, FilterOperations> _operationNames = new()
+	{
+		{ "eq", FilterOperations.Equal },
+		{ "neq", FilterOperations.NotEqual },
+		{ "lk", FilterOperations.Like },
+		{ "nlk", FilterOperations.NotLike },
+		{ "bw", FilterOperations.Between },
+		{ "nbw", FilterOperations.NotBetween },
+		{ "in", FilterOperations.In },
+		{ "nin", FilterOperations.NotIn },
+		{ "gt", FilterOperations.Greater },
+		{ "gte", FilterOperations.GreaterOrEqual },
+		{ "lt", FilterOperations.Less },
+		{ "lte", FilterOperations.LessOrEqual },
+		{ "all", FilterOperations.BitsAnd },
+		{ "any", FilterOperations.BitsOr },
+		{ "nl", FilterOperations.IsNull },
+		{ "nnl", FilterOperations.IsNotNull }
+	};
 	private static readonly CultureInfo _dotNumberFormatInvariantCulture;
 	private static readonly Dictionary<Type, Func<string?, object?>> _parseFilterValueConverters = new ()
 	{

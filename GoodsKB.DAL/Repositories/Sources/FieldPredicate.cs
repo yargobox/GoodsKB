@@ -40,13 +40,22 @@ public static class FieldPredicate<TEntity>
 			case FilterOperations.IsNull:
 				{
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
-					var predicate = Expression.Equal(propMember, Expression.Constant(null, operandType));
+					var nullConst = Expression.Constant(null, operandType);
+					var predicate = Expression.Equal(propMember, nullConst);
 					return predicate;
 				}
 			case FilterOperations.IsNotNull:
 				{
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
-					var predicate = Expression.NotEqual(propMember, Expression.Constant(null, operandType));
+					var nullConst = Expression.Constant(null, operandType);
+					var predicate = Expression.NotEqual(propMember, nullConst);
+					if (operation.HasFlag(FilterOperations.TrueWhenNull))
+					{
+						predicate = Expression.OrElse(
+							Expression.Equal(propMember, nullConst),
+							predicate
+						);
+					}
 					return predicate;
 				}
 			default:
@@ -229,7 +238,15 @@ public static class FieldPredicate<TEntity>
 					if (right is null) throw new ArgumentNullException("right");
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
 					var rightConst = Expression.Constant(right, typeof(IEnumerable<>).MakeGenericType(operandType));
-					var predicate = Expression.Call(typeof(Enumerable), "Contains", new Type[] { operandType }, rightConst, propMember);
+					Expression predicate = Expression.Call(typeof(Enumerable), "Contains", new Type[] { operandType }, rightConst, propMember);
+					if (operation.HasFlag(FilterOperations.TrueWhenNull))
+					{
+						var nullConst = Expression.Constant(null, operandType);
+						predicate = Expression.OrElse(
+							Expression.Equal(propMember, nullConst),
+							predicate
+						);
+					}
 					return predicate;
 				}
 			case FilterOperations.NotIn:
@@ -237,9 +254,17 @@ public static class FieldPredicate<TEntity>
 					if (right is null) throw new ArgumentNullException("right");
 					var propMember = Expression.PropertyOrField(EntityParameter, propName);
 					var rightConst = Expression.Constant(right, typeof(IEnumerable<>).MakeGenericType(operandType));
-					var predicate = Expression.Not(
+					Expression predicate = Expression.Not(
 						Expression.Call(typeof(Enumerable), "Contains", new Type[] { operandType }, rightConst, propMember)
 					);
+					if (operation.HasFlag(FilterOperations.TrueWhenNull))
+					{
+						var nullConst = Expression.Constant(null, operandType);
+						predicate = Expression.OrElse(
+							Expression.Equal(propMember, nullConst),
+							predicate
+						);
+					}
 					return predicate;
 				}
 			case FilterOperations.Like:
@@ -410,5 +435,5 @@ public static class FieldPredicate<TEntity>
 			memberSelector.Body as MemberExpression ??
 			(memberSelector.Body as UnaryExpression)?.Operand as MemberExpression ??
 			((memberSelector.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
-		)?.Member.Name ?? throw new InvalidOperationException("Could not deduct a property name from the member selector.");
+		)?.Member.Name ?? throw new InvalidOperationException("Could not infer a property name from the member selector.");
 }
