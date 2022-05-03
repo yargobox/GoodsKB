@@ -16,7 +16,7 @@ public interface ISoftDelEntity<TDateTime>
 }
 
 public interface ISoftDelRepo<TKey, TEntity, TDateTime> : IRepoBase<TKey, TEntity>
-	where TEntity : IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
+	where TEntity : class, IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	IQueryable<TEntity> GetEntities(SoftDelModes mode);

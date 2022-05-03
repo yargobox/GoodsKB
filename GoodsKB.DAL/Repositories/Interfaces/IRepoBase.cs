@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using GoodsKB.DAL.Repositories.Filters;
 
 namespace GoodsKB.DAL.Repositories;
 
@@ -8,10 +9,11 @@ public interface IIdentifiableEntity<TKey>
 }
 
 public interface IRepoBase<TKey, TEntity>
-	where TEntity : IIdentifiableEntity<TKey>
+	where TEntity : class, IIdentifiableEntity<TKey>
 {
 	IQueryable<TEntity> Entities { get; }
 	IIdentityProvider<TKey>? IdentityProvider { get; }
+	IFilterConditionBuilder ConditionBuilder { get; }
 	Task<long> GetCountAsync();
 	Task<TEntity> CreateAsync(TEntity entity);
 	Task<TEntity?> GetAsync(TKey id);

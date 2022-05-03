@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using GoodsKB.DAL.Configuration;
+using GoodsKB.DAL.Repositories.Filters;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -7,7 +8,7 @@ using MongoDB.Driver.Linq;
 namespace GoodsKB.DAL.Repositories;
 
 internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
-	where TEntity : IIdentifiableEntity<TKey>
+	where TEntity : class, IIdentifiableEntity<TKey>
 {
 	protected readonly IMongoDbContext _context;
 	protected readonly string _collectionName;
@@ -18,6 +19,7 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 		_context = context;
 		_collectionName = collectionName;
 		IdentityProvider = identityProvider;
+		ConditionBuilder = new FilterConditionBuilder<TEntity>();
 
 		var filter = Builders<BsonDocument>.Filter.Eq("name", _collectionName);
 		var options = new ListCollectionNamesOptions { Filter = filter };
@@ -34,6 +36,7 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 
 	public virtual IQueryable<TEntity> Entities => _col.AsQueryable<TEntity>();
 	public IIdentityProvider<TKey>? IdentityProvider { get; }
+	public IFilterConditionBuilder ConditionBuilder { get; }
 	protected FilterDefinitionBuilder<TEntity> _Filter => Builders<TEntity>.Filter;
 	protected UpdateDefinitionBuilder<TEntity> _Update => Builders<TEntity>.Update;
 	protected SortDefinitionBuilder<TEntity> _Sort => Builders<TEntity>.Sort;

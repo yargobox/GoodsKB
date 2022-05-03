@@ -1,7 +1,10 @@
-namespace GoodsKB.DAL.Repositories;
+namespace GoodsKB.DAL.Repositories.Filters;
 
+/// <summary>
+/// Filter Operation
+/// </summary>
 [Flags]
-public enum FilterOperations
+public enum FO : int
 {
 	None = 0,
 	Equal = 1,

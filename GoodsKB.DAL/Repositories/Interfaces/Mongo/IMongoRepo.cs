@@ -4,7 +4,7 @@ using MongoDB.Driver.Linq;
 namespace GoodsKB.DAL.Repositories.Mongo;
 
 public interface IMongoRepo<TKey, TEntity> : IRepoBase<TKey, TEntity>
-	where TEntity : IIdentifiableEntity<TKey>
+	where TEntity : class, IIdentifiableEntity<TKey>
 {
 	IMongoCollection<TEntity> MongoCollection { get; }
 	IMongoQueryable<TEntity> MongoEntities { get; }

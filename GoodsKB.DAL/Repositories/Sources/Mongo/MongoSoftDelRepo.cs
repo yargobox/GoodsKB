@@ -7,7 +7,7 @@ using MongoDB.Driver.Linq;
 namespace GoodsKB.DAL.Repositories.Mongo;
 
 internal class MongoSoftDelRepo<TKey, TEntity, TDateTime> : MongoRepo<TKey, TEntity>, IMongoSoftDelRepo<TKey, TEntity, TDateTime>
-	where TEntity : IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
+	where TEntity : class, IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	private readonly Func<TDateTime> _UtcNow;
