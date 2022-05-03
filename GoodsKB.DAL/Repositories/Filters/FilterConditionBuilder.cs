@@ -148,7 +148,7 @@ internal class FilterConditionBuilder<TEntity> : IFilterConditionBuilder
 					throw new InvalidOperationException($"{typeof(TEntity).Name}.{p.entityProp.Name} is not compatible with {typeof(TDto).Name}.{p.entityProp.Name}.");
 				}
 
-				var initials = p.attr.GetValues();
+				var initials = p.attr.GetInitialValues();
 				var isNullAllowed = p.entityProp.IsNullable() && p.dtoProp.IsNullable();
 				var underType = p.entityProp.GetUnderlyingSystemType();
 
