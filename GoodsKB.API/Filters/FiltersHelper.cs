@@ -72,17 +72,17 @@ internal static class FiltersHelper
 
 			if ((fd.Allowed & trueOperation) != trueOperation)
 			{
-				throw new InvalidOperationException($"Filter {fd.Name} does not support this operation or option.");
+				throw new InvalidOperationException($"Filter {fd.PropertyName} does not support this operation or option.");
 			}
 
 			if ((trueOperation & (FO.IsNull | FO.IsNotNull)) != 0)
 			{
 				if (!string.IsNullOrEmpty(p.arguments))
 				{
-					throw new FormatException($"Operation IsNull of the {fd.Name} filter cannot have arguments.");
+					throw new FormatException($"Operation IsNull of the {fd.PropertyName} filter cannot have arguments.");
 				}
 
-				filterValues[i++] = new FilterValue(fd.Name)
+				filterValues[i++] = new FilterValue(fd.PropertyName)
 				{
 					Operation = trueOperation
 				};
@@ -107,10 +107,10 @@ internal static class FiltersHelper
 				}
 				if (!fd.IsNullAllowed && value == null)
 				{
-					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+					throw new InvalidOperationException($"Filter {fd.PropertyName} does not support nullable arguments.");
 				}
 
-				filterValues[i++] = new FilterValue(fd.Name)
+				filterValues[i++] = new FilterValue(fd.PropertyName)
 				{
 					Operation = trueOperation,
 					Value = value
@@ -123,14 +123,14 @@ internal static class FiltersHelper
 					.ToArray();
 				if (!fd.IsNullAllowed && arr.Any(x => x == null))
 				{
-					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+					throw new InvalidOperationException($"Filter {fd.PropertyName} does not support nullable arguments.");
 				}
 				if (arr.Length > 2)
 				{
-					throw new FormatException($"Operation Between of the {fd.Name} filter must have 2 arguments.");
+					throw new FormatException($"Operation Between of the {fd.PropertyName} filter must have 2 arguments.");
 				}
 
-				filterValues[i++] = new FilterValue(fd.Name)
+				filterValues[i++] = new FilterValue(fd.PropertyName)
 				{
 					Operation = trueOperation,
 					Value = arr.Length > 0 ? arr[0] : (string?)null,
@@ -143,13 +143,13 @@ internal static class FiltersHelper
 					.Select(x => ParseFilterValue(fd.UnderlyingType, x));
 				if (!fd.IsNullAllowed && arr1.Any(x => x == null))
 				{
-					throw new InvalidOperationException($"Filter {fd.Name} does not support nullable arguments.");
+					throw new InvalidOperationException($"Filter {fd.PropertyName} does not support nullable arguments.");
 				}
 
 				var castMethod = typeof(Enumerable).GetMethod("Cast")?.MakeGenericMethod(new[] { fd.OperandType });
 				var arr2 = castMethod!.Invoke(null, new object[] { arr1 });
 
-				filterValues[i++] = new FilterValue(fd.Name)
+				filterValues[i++] = new FilterValue(fd.PropertyName)
 				{
 					Operation = trueOperation,
 					Value = arr2

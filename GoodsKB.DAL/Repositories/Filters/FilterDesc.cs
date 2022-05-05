@@ -4,18 +4,19 @@ namespace GoodsKB.DAL.Repositories.Filters;
 
 public sealed record FilterDesc
 {
-	public FilterDesc(string name, Type operandType, Type underlyingType, Expression memeberSelector)
+	public record struct GroupFilterPartDesc(string Name, bool JoinByAnd) { }
+
+	public FilterDesc(string propertyName, Type operandType, Type underlyingType)
 	{
-		Name = name;
+		PropertyName = propertyName;
 		OperandType = operandType;
 		UnderlyingType = underlyingType;
-		MemeberSelector = memeberSelector;
 	}
 
 	/// <summary>
 	/// Entity property name
 	/// </summary>
-	public string Name { get; init; }
+	public string PropertyName { get; init; }
 
 	/// <summary>
 	/// A data type of the filter operands that match the data type of the property.
@@ -26,11 +27,6 @@ public sealed record FilterDesc
 	/// Underlying system data type for the property (without Nullable struct)
 	/// </summary>
 	public Type UnderlyingType { get; init; }
-
-	/// <summary>
-	/// Entity property selector
-	/// </summary>
-	public Expression MemeberSelector { get; init; }
 
 	/// <summary>
 	/// Allowed filter operations
@@ -54,4 +50,33 @@ public sealed record FilterDesc
 	/// This property also depends on IsNullAllowed.
 	/// </summary>
 	public bool IsEmptyToNull { get; init; }
+
+	/// <summary>
+	/// Is the filter visible by default?
+	/// </summary>
+	public bool Visible { get; init; } = true;
+
+	/// <summary>
+	/// Filter position for UI
+	/// </summary>
+	public int Position { get; init; } = 0;
+
+	/// <summary>
+	/// Is the filter allowed to be used in filter operations?
+	/// </summary>
+	/// <remarks>
+	/// If a filter is defined through <c>FilterAttribute</c> without a group filter name,
+	/// it can be used in filter operations. Otherwise, only the group filter can be used.
+	/// </remarks>
+	public bool Enabled { get; init; } = true;
+
+	/// <summary>
+	/// Is this a group filter?
+	/// </summary>
+	public bool IsGroupFilter => Parts != null;
+
+	/// <summary>
+	/// Enumeration of filters of the group filter in the specified order.
+	/// </summary>
+	public IEnumerable<GroupFilterPartDesc>? Parts { get; init; }
 }

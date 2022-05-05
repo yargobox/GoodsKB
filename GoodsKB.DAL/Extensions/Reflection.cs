@@ -89,4 +89,3 @@ internal static class ReflectionExtensions
 		return Array.Empty<Type>();
 	}
 }
-

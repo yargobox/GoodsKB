@@ -1,6 +1,9 @@
 namespace GoodsKB.DAL.Repositories.Filters;
 
-public record struct FilterValue(string Name)
+/// <summary>
+/// Filter operation context for a property
+/// </summary>
+public record struct FilterValue(string PropertyName)
 {
 	public FO Operation { get; init; } = FO.None;
 	public object? Value { get; init; } = null;

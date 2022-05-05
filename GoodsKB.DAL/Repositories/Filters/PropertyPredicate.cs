@@ -36,7 +36,7 @@ internal static class PropertyPredicate<TEntity>
 					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"Invalid number of arguments or the operation itself on {propName}.");
+				throw new InvalidOperationException($"Invalid number of arguments or the operation itself on {typeof(TEntity).Name}.{propName}.");
 		}
 	}
 	public static Expression Build<TField>(FO operation, Expression<Func<TEntity, TField>> left) =>
@@ -51,10 +51,10 @@ internal static class PropertyPredicate<TEntity>
 					if ((operation & (FO.CaseInsensitive | FO.CaseInsensitiveInvariant)) != 0)
 					{
 						if (!typeof(string).IsAssignableFrom(operandType))
-							throw new InvalidOperationException($"The Like or NotLike operation cannot be applied to {propName}. These operations are performed only on strings.");
+							throw new InvalidOperationException($"Operations Like and NotLike cannot be applied to {typeof(TEntity).Name}.{propName}. These operations are performed only on strings.");
 
 						var propInfo = typeof(TEntity).GetProperty(propName)
-							?? throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property named {propName}.");
+							?? throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property {propName}.");
 						var propMember = Expression.MakeMemberAccess(EntityParameter, propInfo);
 
 						Expression toLowerCall;
@@ -103,10 +103,10 @@ internal static class PropertyPredicate<TEntity>
 					if ((operation & (FO.CaseInsensitive | FO.CaseInsensitiveInvariant)) != 0)
 					{
 						if (operandType != typeof(string))
-							throw new InvalidOperationException($"The Like or NotLike operation cannot be applied to {propName}. These operations are performed only on strings.");
+							throw new InvalidOperationException($"Operations Like and NotLike cannot be applied to {typeof(TEntity).Name}.{propName}. These operations are performed only on strings.");
 
 						var propInfo = typeof(TEntity).GetProperty(propName)
-							?? throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property named {propName}.");
+							?? throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property {propName}.");
 						var propMember = Expression.MakeMemberAccess(EntityParameter, propInfo);
 
 						Expression toLowerCall;
@@ -248,10 +248,10 @@ internal static class PropertyPredicate<TEntity>
 			case FO.NotLike:
 				{
 					if (operandType != typeof(string))
-						throw new InvalidOperationException($"The Like or NotLike operation cannot be applied to {propName}. These operations are performed only on strings.");
+						throw new InvalidOperationException($"Operations Like and NotLike cannot be applied to {typeof(TEntity).Name}.{propName}. These operations are performed only on strings.");
 
 					var propInfo = typeof(TEntity).GetProperty(propName)
-							?? throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property named {propName}.");
+							?? throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property {propName}.");
 					var propMember = Expression.MakeMemberAccess(EntityParameter, propInfo);
 
 					Expression predicate;
@@ -331,7 +331,7 @@ internal static class PropertyPredicate<TEntity>
 					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"Invalid number of arguments or the operation itself on {propName}.");
+				throw new InvalidOperationException($"Invalid number of arguments or the operation itself on {typeof(TEntity).Name}.{propName}.");
 		}
 	}
 	public static Expression Build<TField>(FO operation, Expression<Func<TEntity, TField>> left, TField right) =>
@@ -380,7 +380,7 @@ internal static class PropertyPredicate<TEntity>
 					return predicate;
 				}
 			default:
-				throw new InvalidOperationException($"Invalid number of arguments or the operation itself on {propName}.");
+				throw new InvalidOperationException($"Invalid number of arguments or the operation itself on {typeof(TEntity).Name}.{propName}.");
 		}
 	}
 	public static Expression Build<TField>(FO operation, Expression<Func<TEntity, TField>> left, TField right, TField secondRight) =>
@@ -413,5 +413,5 @@ internal static class PropertyPredicate<TEntity>
 			memberSelector.Body as MemberExpression ??
 			(memberSelector.Body as UnaryExpression)?.Operand as MemberExpression ??
 			((memberSelector.Body as UnaryExpression)?.Operand as UnaryExpression)?.Operand as MemberExpression
-		)?.Member.Name ?? throw new InvalidOperationException($"Could not obtain a property name from the member selector expression for {typeof(TEntity).Name}.");
+		)?.Member.Name ?? throw new InvalidOperationException($"Could not obtain a property name from the member selector expression for {typeof(TField).Name} {typeof(TEntity).Name}.???.");
 }
