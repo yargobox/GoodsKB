@@ -55,11 +55,11 @@ public sealed record FilterDesc
 	/// Is the filter visible by default?
 	/// </summary>
 	public bool Visible { get; init; } = true;
-
+/* 
 	/// <summary>
 	/// Filter position for UI
 	/// </summary>
-	public int Position { get; init; } = 0;
+	public int Position { get; init; } = 0; */
 
 	/// <summary>
 	/// Is the filter allowed to be used in filter operations?
@@ -73,10 +73,10 @@ public sealed record FilterDesc
 	/// <summary>
 	/// Is this a group filter?
 	/// </summary>
-	public bool IsGroupFilter => Parts != null;
+	public bool IsGroupFilter => GroupParts != null;
 
 	/// <summary>
 	/// Enumeration of filters of the group filter in the specified order.
 	/// </summary>
-	public IEnumerable<GroupFilterPartDesc>? Parts { get; init; }
+	public IEnumerable<GroupFilterPartDesc>? GroupParts { get; init; }
 }

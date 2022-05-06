@@ -15,7 +15,7 @@ namespace GoodsKB.BLL.Services;
 
 public interface IUserService
 {
-	ReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>();
+	IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>();
 	Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter);
 	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber);
 	Task<UserDto> GetAsync(int id);
@@ -38,7 +38,7 @@ public class UserService : IUserService
 		_repo = _context.Users;
 	}
 
-	public ReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() => _repo.ConditionBuilder.GetFilters<TDto>();
+	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() => _repo.ConditionBuilder.GetFilters<TDto>();
 
 	public async Task<int> CreateAsync(UserCreateDto dto)
 	{

@@ -14,7 +14,7 @@ namespace GoodsKB.DAL.Repositories.Filters;
 /// </remarks>
 public interface IFilterConditionBuilder
 {
-	ReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>();
+	IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>();
 
 	[return: NotNullIfNotNull("values")]
 	Expression? BuildCondition(FilterValues? values);

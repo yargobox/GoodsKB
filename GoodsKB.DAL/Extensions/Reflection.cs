@@ -88,4 +88,15 @@ internal static class ReflectionExtensions
 
 		return Array.Empty<Type>();
 	}
+
+	internal static T? GetCustomAttributeOfExactType<T>(this PropertyInfo propertyInfo, bool inherit)
+	{
+		var t = typeof(T);
+		return (T?) propertyInfo.GetCustomAttributes(inherit).OfType<T>().Where(x => x?.GetType() == t).FirstOrDefault();
+	}
+	internal static T[] GetCustomAttributesOfExactType<T>(this PropertyInfo propertyInfo, bool inherit)
+	{
+		var t = typeof(T);
+		return propertyInfo.GetCustomAttributes(inherit).OfType<T>().Where(x => x?.GetType() == t).ToArray();
+	}
 }

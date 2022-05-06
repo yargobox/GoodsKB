@@ -8,19 +8,20 @@ public class UserModel
 	[Filter(Position = 1)]
 	public int Id { get; set; }
 
-	[Filter(Visible = false), GroupFilter("Name", Position = 3, ConditionOrder = 1)]
+	[Filter(Visible = false)]
+	[GroupFilter("Name", Position = 3)]
 	public string Username { get; set; } = string.Empty;
 	
-	[Filter(Visible = false), GroupFilter("Name", ConditionOrder = 3)]
+	[FilterPart("Name")]
 	public string? FirstName { get; set; }
 	
-	[Filter(Visible = false), GroupFilter("Name", ConditionOrder = 2)]
+	[FilterPart("Name", ConditionOrder = 2)]
 	public string? LastName { get; set; }
 	
-	[Filter("Contacts", Position = 4, ConditionOrder = 2)]
+	[FilterPart("Contacts", ConditionOrder = 1)]
 	public string? Email { get; set; }
 	
-	[Filter("Contacts", ConditionOrder = 1, Visible = true)]
+	[GroupFilter("Contacts", Position = 4)]
 	public string? Phone { get; set; }
 	
 	public string? Desc { get; set; }
@@ -29,12 +30,13 @@ public class UserModel
 	
 	public virtual IEnumerable<DirectionModel> Directions {get; set; } = new List<DirectionModel>();
 	
-	[Filter(Position = 2), GroupFilter("Modified", 5, true, ConditionOrder = 1)]
+	[GroupFilter("Modified", Position = 1, ConditionOrder = 2)]
+	[Filter(Position = 2)]
 	public DateTimeOffset Created { get; set; }
 	
-	[Filter("Modified")]
+	[FilterPart("Modified", 3)]
 	public DateTimeOffset? Updated { get; set; }
 	
-	[Filter("Modified")]
+	[FilterPart("Modified", 1)]
 	public DateTimeOffset? Deleted { get; set; }
 }

@@ -48,7 +48,7 @@ internal static class FiltersHelper
 	/// <returns></returns>
 	/// <exception cref="InvalidOperationException"></exception>
 	/// <exception cref="FormatException"></exception>
-	public static FilterValues? SerializeFromString(ReadOnlyDictionary<string, FilterDesc> filters, string? filter)
+	public static FilterValues? SerializeFromString(IReadOnlyDictionary<string, FilterDesc> filters, string? filter)
 	{
 		if (string.IsNullOrWhiteSpace(filter)) return null;
 
