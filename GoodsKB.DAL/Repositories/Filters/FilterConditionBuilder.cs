@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -9,10 +8,9 @@ using GoodsKB.DAL.Generic;
 
 namespace GoodsKB.DAL.Repositories.Filters;
 
-internal class FilterConditionBuilder<TEntity> : IFilterConditionBuilder
-	where TEntity : class
+internal class FilterConditionBuilder<TEntity> : IFilterConditionBuilder where TEntity : notnull
 {
-	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() => FilterDescHelper<TDto>.Filters;
+	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>()  where TDto : notnull => FilterDescHelper<TDto>.Filters;
 
 	[return: NotNullIfNotNull("values")]
 	public Expression? BuildCondition(FilterValues? values)
@@ -197,7 +195,7 @@ internal class FilterConditionBuilder<TEntity> : IFilterConditionBuilder
 		}
 	}
 
-	private static class FilterDescHelper<TDto>
+	private static class FilterDescHelper<TDto> where TDto : notnull
 	{
 		public static IReadOnlyDictionary<string, FilterDesc> Filters { get; }
 		private static readonly FilterAttribute _defaultFilterAttribute = new FilterAttribute();
@@ -364,23 +362,29 @@ internal class FilterConditionBuilder<TEntity> : IFilterConditionBuilder
 					filterAttr: (FilterAttribute)x.entry.groupAttrs.First(t => t.GroupFilter == x.filterName)
 				))
 				.ToArray();
-
 			var filtersAndPositions = filters
 				.Select(x => (
 					filter: x,
-					filterAttr: filterAttrByFilterNames.Then(groupAttrByFilterNames).FirstOrDefault(t => t.filterName == x.Key)
+					name: x.Value.Enabled ? x.Key : GetTrueFilterName(x.Key),
+					position: filterAttrByFilterNames.Then(groupAttrByFilterNames).FirstOrDefault(t => t.filterName == x.Key).filterAttr?.Position
 				))
 				.Select(x => (
 					filter: x.filter,
-					position: x.filterAttr == default ? int.MaxValue : x.filterAttr.filterAttr.Position
+					position: x.position ?? entries
+						.First(t => t.groupAttrs.Any(m => m.GroupFilter == x.name))
+						.groupAttrs.First(t => t.GroupFilter == x.name).Position
 				))
-				.OrderBy(x => x.position)
-				.Select(x => new KeyValuePair<string, FilterDesc>(x.filter.Key, x.filter.Value));
+				.ToList();
 
-			Filters = new OrderedDictionary<string, FilterDesc>(filtersAndPositions, StringComparer.InvariantCultureIgnoreCase);
+			filtersAndPositions.Sort((a, b) => a.position != b.position ? a.position.CompareTo(b.position) : a.filter.Key.CompareTo(b.filter.Key));
+
+			Filters = new OrderedDictionary<string, FilterDesc>(
+				filtersAndPositions.Select(x => new KeyValuePair<string, FilterDesc>(x.filter.Key, x.filter.Value)),
+				StringComparer.InvariantCultureIgnoreCase);
 		}
 
 		private static string MakeFilterPartName(string groupFilter, string entityProp) => string.Concat(groupFilter, ":", entityProp);
+		private static string GetTrueFilterName(string filterName) => filterName.Split(':')[0];
 
 		private static FilterDesc MakeFilterDesc(PropertyInfo entityProp, PropertyInfo dtoProp, FilterAttribute filterAttr)
 		{

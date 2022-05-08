@@ -1,18 +1,12 @@
 using System.Collections;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace GoodsKB.DAL.Generic;
 
-public interface IOrderedDictionary<TKey, TValue> :
-	ICollection<KeyValuePair<TKey, TValue>>,
-	IEnumerable<KeyValuePair<TKey, TValue>>,
-	IEnumerable,
-	IDictionary<TKey, TValue>,
-	IReadOnlyCollection<KeyValuePair<TKey, TValue>>,
-	IReadOnlyDictionary<TKey, TValue>,
-	ICollection,
-	IDictionary
-	where TKey : notnull
+[DefaultMember("Item")]
+public interface IDictionary<TKey, TValue> : System.Collections.Generic.IDictionary<TKey, TValue> where TKey : notnull
 {
 	TKey KeyOf(int index);
 	int IndexOf(TKey key);
@@ -24,8 +18,18 @@ public interface IOrderedDictionary<TKey, TValue> :
 	void Sort(int index, int count, IComparer<KeyValuePair<TKey, TValue>> comparer);
 }
 
+[DebuggerTypeProxy(typeof(DebugViewOfDictionary<,>))]
+[DebuggerDisplay("Count = {Count}")]
 public class OrderedDictionary<TKey, TValue> :
-	IOrderedDictionary<TKey, TValue>
+	ICollection<KeyValuePair<TKey, TValue>>,
+	IEnumerable<KeyValuePair<TKey, TValue>>,
+	IEnumerable,
+	System.Collections.Generic.IDictionary<TKey, TValue>,
+	IDictionary<TKey, TValue>,
+	IReadOnlyCollection<KeyValuePair<TKey, TValue>>,
+	IReadOnlyDictionary<TKey, TValue>,
+	ICollection,
+	IDictionary
 	where TKey : notnull
 {
 	readonly Dictionary<TKey, int> _index;
@@ -41,7 +45,7 @@ public class OrderedDictionary<TKey, TValue> :
 		_keys = new KeyCollection(this);
 		_values = new ValueCollection(this);
 	}
-	public OrderedDictionary(IDictionary<TKey, TValue> dictionary)
+	public OrderedDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary)
 	{
 		_list = dictionary.ToList();
 		_index = new Dictionary<TKey, int>(_list.Count);
@@ -73,7 +77,7 @@ public class OrderedDictionary<TKey, TValue> :
 		_keys = new KeyCollection(this);
 		_values = new ValueCollection(this);
 	}
-	public OrderedDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer)
+	public OrderedDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer)
 	{
 		_list = dictionary.ToList();
 		_index = new Dictionary<TKey, int>(_list.Count, comparer);
@@ -254,6 +258,8 @@ public class OrderedDictionary<TKey, TValue> :
 
 	static bool ValueEquals(TValue value1, TValue value2) => value2 is null ? value1 is null : (value1 is null ? false : value1.Equals(value2));
 
+	[DebuggerTypeProxy(typeof(DebugViewOfDictionaryKeyCollection<,>))]
+	[DebuggerDisplay("Count = {Count}")]
 	sealed class KeyCollection : ICollection<TKey>, IEnumerable<TKey>, ICollection
 	{
 		readonly OrderedDictionary<TKey, TValue> _dictionary;
@@ -306,6 +312,8 @@ public class OrderedDictionary<TKey, TValue> :
 		IEnumerator IEnumerable.GetEnumerator() => _dictionary._list.Select(x => x.Key).GetEnumerator();
 	}
 
+	[DebuggerTypeProxy(typeof(DebugViewOfDictionaryValueCollection<,>))]
+	[DebuggerDisplay("Count = {Count}")]
 	sealed class ValueCollection : ICollection<TValue>, IEnumerable<TValue>, ICollection
 	{
 		readonly OrderedDictionary<TKey, TValue> _dictionary;
@@ -373,6 +381,78 @@ public class OrderedDictionary<TKey, TValue> :
 		{
 			_enumerator.Dispose();
 			GC.SuppressFinalize(this);
+		}
+	}
+}
+
+internal sealed class DebugViewOfDictionary<K, V> where K : notnull
+{
+	readonly IDictionary<K, V> dict;
+
+	public DebugViewOfDictionary(IDictionary<K, V> dictionary)
+	{
+		if (dictionary == null)
+			throw new ArgumentNullException(nameof(dictionary));
+
+		dict = dictionary;
+	}
+
+	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+	public KeyValuePair<K, V>[] Items
+	{
+		get
+		{
+			var items = new KeyValuePair<K, V>[dict.Count];
+			dict.CopyTo(items, 0);
+			return items;
+		}
+	}
+}
+
+internal sealed class DebugViewOfDictionaryKeyCollection<K, V> where K : notnull
+{
+	readonly ICollection<K> _collection;
+	
+	public DebugViewOfDictionaryKeyCollection(ICollection<K> collection)
+	{
+		if (collection == null)
+			throw new ArgumentNullException(nameof(collection));
+
+		_collection = collection;
+	}
+
+	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+	public K[] Items
+	{
+		get
+		{
+			K[] items = new K[_collection.Count];
+			_collection.CopyTo(items, 0);
+			return items;
+		}
+	}
+}
+
+internal sealed class DebugViewOfDictionaryValueCollection<K, V> where K : notnull
+{
+	readonly ICollection<V> _collection;
+	
+	public DebugViewOfDictionaryValueCollection(ICollection<V> collection)
+	{
+		if (collection == null)
+			throw new ArgumentNullException(nameof(collection));
+
+		_collection = collection;
+	}
+
+	[DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+	public V[] Items
+	{
+		get
+		{
+			V[] items = new V[_collection.Count];
+			_collection.CopyTo(items, 0);
+			return items;
 		}
 	}
 }

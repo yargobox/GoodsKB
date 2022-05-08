@@ -1,7 +1,8 @@
-using System.Linq.Expressions;
+using System.Diagnostics;
 
 namespace GoodsKB.DAL.Repositories.Filters;
 
+[DebuggerDisplay("{PropertyName,nq}: {Default.ToString(),nq} ({UnderlyingType.Name,nq}{IsNullAllowed?\"?\":\"\",nq})")]
 public sealed record FilterDesc
 {
 	public record struct GroupFilterPartDesc(string Name, bool JoinByAnd) { }
