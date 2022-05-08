@@ -103,7 +103,7 @@ internal static class FiltersHelper
 				var value = ParseFilterValue(fd.UnderlyingType, p.arguments);
 				if (fd.IsEmptyToNull && (trueOperation & (FO.Like | FO.NotLike)) == 0 && string.IsNullOrEmpty((string?)value))
 				{
-					value = (string?)null;
+					value = null;
 				}
 				if (!fd.IsNullAllowed && value == null)
 				{
@@ -133,8 +133,8 @@ internal static class FiltersHelper
 				filterValues[i++] = new FilterValue(fd.PropertyName)
 				{
 					Operation = trueOperation,
-					Value = arr.Length > 0 ? arr[0] : (string?)null,
-					Value2 = arr.Length > 1 ? arr[1] : (string?)null
+					Value = arr.Length > 0 ? arr[0] : null,
+					Value2 = arr.Length > 1 ? arr[1] : null
 				};
 			}
 			else if ((trueOperation & (FO.In | FO.NotIn)) != 0)
@@ -279,27 +279,27 @@ internal static class FiltersHelper
 	private static readonly Dictionary<Type, Func<string?, object?>> _parseFilterValueConverters = new ()
 	{
 		{ typeof(string), s => s },
- 		{ typeof(char), s => string.IsNullOrEmpty(s) ? (char?)null : s[0] },
+ 		{ typeof(char), s => string.IsNullOrEmpty(s) ? null : s[0] },
 
-		{ typeof(Guid), s => string.IsNullOrEmpty(s) ? (Guid?)null : Guid.Parse(s) },
+		{ typeof(Guid), s => string.IsNullOrEmpty(s) ? null : Guid.Parse(s) },
 
-		{ typeof(byte), s => string.IsNullOrEmpty(s) ? (byte?)null : byte.Parse(s) },
-		{ typeof(sbyte), s => string.IsNullOrEmpty(s) ? (sbyte?)null : sbyte.Parse(s) },
-		{ typeof(short), s => string.IsNullOrEmpty(s) ? (short?)null : short.Parse(s) },
-		{ typeof(ushort), s => string.IsNullOrEmpty(s) ? (ushort?)null : ushort.Parse(s) },
-		{ typeof(int), s => string.IsNullOrEmpty(s) ? (int?)null : int.Parse(s) },
-		{ typeof(uint), s => string.IsNullOrEmpty(s) ? (uint?)null : uint.Parse(s) },
-		{ typeof(long), s => string.IsNullOrEmpty(s) ? (long?)null : long.Parse(s) },
-		{ typeof(ulong), s => string.IsNullOrEmpty(s) ? (ulong?)null : ulong.Parse(s) },
+		{ typeof(byte), s => string.IsNullOrEmpty(s) ? null : byte.Parse(s) },
+		{ typeof(sbyte), s => string.IsNullOrEmpty(s) ? null : sbyte.Parse(s) },
+		{ typeof(short), s => string.IsNullOrEmpty(s) ? null : short.Parse(s) },
+		{ typeof(ushort), s => string.IsNullOrEmpty(s) ? null : ushort.Parse(s) },
+		{ typeof(int), s => string.IsNullOrEmpty(s) ? null : int.Parse(s) },
+		{ typeof(uint), s => string.IsNullOrEmpty(s) ? null : uint.Parse(s) },
+		{ typeof(long), s => string.IsNullOrEmpty(s) ? null : long.Parse(s) },
+		{ typeof(ulong), s => string.IsNullOrEmpty(s) ? null : ulong.Parse(s) },
 
-		{ typeof(DateTime), s => string.IsNullOrEmpty(s) ? (DateTime?)null : DateTime.ParseExact(s, "yyyy-MM-ddTHH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
-		{ typeof(DateTimeOffset), s => string.IsNullOrEmpty(s) ? (DateTimeOffset?)null : DateTimeOffset.ParseExact(s, "yyyy-MM-ddTHH:mm:ss.FFFFFFFK", CultureInfo.InvariantCulture) },
-		{ typeof(DateOnly), s => string.IsNullOrEmpty(s) ? (DateOnly?)null : DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture) },
-		{ typeof(TimeOnly), s => string.IsNullOrEmpty(s) ? (TimeOnly?)null : TimeOnly.ParseExact(s, "HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
-		{ typeof(TimeSpan), s => string.IsNullOrEmpty(s) ? (TimeSpan?)null : TimeSpan.ParseExact(s, "d:hh:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
+		{ typeof(DateTime), s => string.IsNullOrEmpty(s) ? null : DateTime.ParseExact(s, "yyyy-MM-ddTHH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
+		{ typeof(DateTimeOffset), s => string.IsNullOrEmpty(s) ? null : DateTimeOffset.ParseExact(s, "yyyy-MM-ddTHH:mm:ss.FFFFFFFK", CultureInfo.InvariantCulture) },
+		{ typeof(DateOnly), s => string.IsNullOrEmpty(s) ? null : DateOnly.ParseExact(s, "yyyy-MM-dd", CultureInfo.InvariantCulture) },
+		{ typeof(TimeOnly), s => string.IsNullOrEmpty(s) ? null : TimeOnly.ParseExact(s, "HH:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
+		{ typeof(TimeSpan), s => string.IsNullOrEmpty(s) ? null : TimeSpan.ParseExact(s, "d:hh:mm:ss.FFFFFFF", CultureInfo.InvariantCulture) },
 
-		{ typeof(float), s => string.IsNullOrEmpty(s) ? (float?)null : float.Parse(s, NumberStyles.Float, _dotNumberFormatInvariantCulture) },
-		{ typeof(double), s => string.IsNullOrEmpty(s) ? (double?)null : double.Parse(s, NumberStyles.Float, _dotNumberFormatInvariantCulture) },
-		{ typeof(decimal), s => string.IsNullOrEmpty(s) ? (decimal?)null : decimal.Parse(s, NumberStyles.Integer | NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, _dotNumberFormatInvariantCulture) }
+		{ typeof(float), s => string.IsNullOrEmpty(s) ? null : float.Parse(s, NumberStyles.Float, _dotNumberFormatInvariantCulture) },
+		{ typeof(double), s => string.IsNullOrEmpty(s) ? null : double.Parse(s, NumberStyles.Float, _dotNumberFormatInvariantCulture) },
+		{ typeof(decimal), s => string.IsNullOrEmpty(s) ? null : decimal.Parse(s, NumberStyles.Integer | NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, _dotNumberFormatInvariantCulture) }
 	};
 }

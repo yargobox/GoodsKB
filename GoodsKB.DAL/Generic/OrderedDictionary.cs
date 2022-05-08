@@ -14,8 +14,8 @@ public interface IDictionary<TKey, TValue> : System.Collections.Generic.IDiction
 	void RemoveAt(int index);
 	void Sort();
 	void Sort(Comparison<KeyValuePair<TKey, TValue>> comparer);
-	void Sort(IComparer<KeyValuePair<TKey, TValue>> comparer);
-	void Sort(int index, int count, IComparer<KeyValuePair<TKey, TValue>> comparer);
+	void Sort(IComparer<KeyValuePair<TKey, TValue>>? comparer);
+	void Sort(int index, int count, IComparer<KeyValuePair<TKey, TValue>>? comparer);
 }
 
 [DebuggerTypeProxy(typeof(DebugViewOfDictionary<,>))]
@@ -34,16 +34,12 @@ public class OrderedDictionary<TKey, TValue> :
 {
 	readonly Dictionary<TKey, int> _index;
 	readonly List<KeyValuePair<TKey, TValue>> _list;
-	readonly object _syncRoot = new object();
-	readonly KeyCollection _keys;
-	readonly ValueCollection _values;
+	object? _syncRoot = null;
 
 	public OrderedDictionary()
 	{
 		_list = new List<KeyValuePair<TKey, TValue>>();
 		_index = new Dictionary<TKey, int>();
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary)
 	{
@@ -51,8 +47,6 @@ public class OrderedDictionary<TKey, TValue> :
 		_index = new Dictionary<TKey, int>(_list.Count);
 		int i = 0;
 		foreach (var p in _list) _index.Add(p.Key, i++);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection)
 	{
@@ -60,22 +54,16 @@ public class OrderedDictionary<TKey, TValue> :
 		_index = new Dictionary<TKey, int>(_list.Count);
 		int i = 0;
 		foreach (var p in _list) _index.Add(p.Key, i++);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(IEqualityComparer<TKey>? comparer)
 	{
 		_list = new List<KeyValuePair<TKey, TValue>>();
 		_index = new Dictionary<TKey, int>(comparer);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(int capacity)
 	{
 		_list = new List<KeyValuePair<TKey, TValue>>(capacity);
 		_index = new Dictionary<TKey, int>(capacity);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer)
 	{
@@ -83,8 +71,6 @@ public class OrderedDictionary<TKey, TValue> :
 		_index = new Dictionary<TKey, int>(_list.Count, comparer);
 		int i = 0;
 		foreach (var p in _list) _index.Add(p.Key, i++);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
 	{
@@ -92,26 +78,35 @@ public class OrderedDictionary<TKey, TValue> :
 		_index = new Dictionary<TKey, int>(_list.Count, comparer);
 		int i = 0;
 		foreach (var p in _list) _index.Add(p.Key, i++);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 	public OrderedDictionary(int capacity, IEqualityComparer<TKey>? comparer)
 	{
 		_list = new List<KeyValuePair<TKey, TValue>>(capacity);
 		_index = new Dictionary<TKey, int>(comparer);
-		_keys = new KeyCollection(this);
-		_values = new ValueCollection(this);
 	}
 
 	public TValue this[TKey key] { get => _list[_index[key]].Value; set => _Set(key, value); }
 
-	public object? this[object key] { get => _list[_index[(TKey)key]].Value; set => _Set((TKey)key!, (TValue)value!); }
+	public object? this[object key]
+	{
+		get
+		{
+			if (!IsCompatibleKey(key)) throw new ArgumentException(nameof(key));
+			return _list[_index[(TKey)key]].Value;
+		}
+		set
+		{
+			if (!IsCompatibleKey(key)) throw new ArgumentException(nameof(key));
+			if (!IsCompatibleValue(value)) throw new ArgumentException(nameof(value));
+			_Set((TKey)key, (TValue)value!);
+		}
+	}
 
 	TValue IReadOnlyDictionary<TKey, TValue>.this[TKey key] => _list[_index[key]].Value;
 
-	public ICollection<TKey> Keys => _keys;
+	public ICollection<TKey> Keys => new KeyCollection(this);
 
-	public ICollection<TValue> Values => _values;
+	public ICollection<TValue> Values => new ValueCollection(this);
 
 	public int Count => _list.Count;
 
@@ -121,21 +116,33 @@ public class OrderedDictionary<TKey, TValue> :
 
 	public bool IsSynchronized => false;
 
-	public object SyncRoot => _syncRoot;
+	public object SyncRoot 
+	{
+		get
+		{
+			if( _syncRoot == null) System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot!, new Object(), null!);
+			return _syncRoot;
+		}
+	}
 
-	IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => _keys;
+	IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => new KeyCollection(this);
 
-	ICollection IDictionary.Keys => _keys;
+	ICollection IDictionary.Keys => new KeyCollection(this);
 
-	IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => _values;
+	IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => new ValueCollection(this);
 
-	ICollection IDictionary.Values => _values;
+	ICollection IDictionary.Values => new ValueCollection(this);
 
 	public void Add(TKey key, TValue value) => _Add(new KeyValuePair<TKey, TValue>(key, value));
 
 	public void Add(KeyValuePair<TKey, TValue> item) => _Add(item);
 
-	public void Add(object key, object? value) => _Add(new KeyValuePair<TKey, TValue>((TKey)key, (TValue)value!));
+	public void Add(object key, object? value)
+	{
+		if (!IsCompatibleKey(key)) throw new ArgumentException(nameof(key));
+		if (!IsCompatibleValue(value)) throw new ArgumentException(nameof(value));
+		_Add(new KeyValuePair<TKey, TValue>((TKey)key, (TValue)value!));
+	}
 
 	public void Clear()
 	{
@@ -146,16 +153,31 @@ public class OrderedDictionary<TKey, TValue> :
 	public bool Contains(KeyValuePair<TKey, TValue> item)
 	{
 		int index;
-		return _index.TryGetValue(item.Key, out index) && ValueEquals(_list[index].Value, item.Value);
+		return _index.TryGetValue(item.Key, out index) && EqualityComparer<TValue>.Default.Equals(_list[index].Value, item.Value);
 	}
 
-	public bool Contains(object key) => _index.ContainsKey((TKey)key);
+	public bool Contains(object key) => IsCompatibleKey(key) && _index.ContainsKey((TKey)key);
 
 	public bool ContainsKey(TKey key) => _index.ContainsKey(key);
 
 	public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex) => _list.CopyTo(array, arrayIndex);
 
-	public void CopyTo(Array array, int index) => CopyTo(array, index);
+	public void CopyTo(Array array, int index)
+	{
+		if (array == null) throw new ArgumentNullException(nameof(array));
+		if (array.Rank != 1) throw new ArgumentException(nameof(array));
+		var lowerBound = array.GetLowerBound(0);
+		if (index < lowerBound) throw new ArgumentOutOfRangeException(nameof(index));
+		if (array.GetUpperBound(0) - lowerBound + 1 <= 0)
+		{
+			if (index > lowerBound) throw new ArgumentOutOfRangeException(nameof(index));
+			if (_list.Count > 0) throw new ArgumentException();
+			return;
+		}
+		if (array.Length - (index - lowerBound) < _list.Count) throw new ArgumentException();
+		
+		foreach (var p in _list) array.SetValue(p, index++);
+	}
 
 	public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _list.GetEnumerator();
 
@@ -169,7 +191,11 @@ public class OrderedDictionary<TKey, TValue> :
 
 	public bool Remove(KeyValuePair<TKey, TValue> item) => _RemoveByKey(item.Key);
 
-	public void Remove(object key) => _RemoveByKey((TKey)key);
+	public void Remove(object key)
+	{
+		if (!IsCompatibleKey(key)) throw new ArgumentException(nameof(key));
+		_RemoveByKey((TKey)key);
+	}
 
 	public void RemoveAt(int index) => _RemoveByIndex(index);
 
@@ -201,13 +227,13 @@ public class OrderedDictionary<TKey, TValue> :
 		for (int i = 0; i < _list.Count; i++) _index[_list[i].Key] = i;
 	}
 
-	public void Sort(IComparer<KeyValuePair<TKey, TValue>> comparer)
+	public void Sort(IComparer<KeyValuePair<TKey, TValue>>? comparer)
 	{
 		_list.Sort(comparer);
 		for (int i = 0; i < _list.Count; i++) _index[_list[i].Key] = i;
 	}
 
-	public void Sort(int index, int count, IComparer<KeyValuePair<TKey, TValue>> comparer)
+	public void Sort(int index, int count, IComparer<KeyValuePair<TKey, TValue>>? comparer)
 	{
 		_list.Sort(index, count, comparer);
 		count += index;
@@ -256,7 +282,8 @@ public class OrderedDictionary<TKey, TValue> :
 		_list.Add(item);
 	}
 
-	static bool ValueEquals(TValue value1, TValue value2) => value2 is null ? value1 is null : (value1 is null ? false : value1.Equals(value2));
+	static bool IsCompatibleKey(object key) => key is TKey;
+	static bool IsCompatibleValue(object? value) => ((value is TValue) || (value == null && default(TValue) == null));
 
 	[DebuggerTypeProxy(typeof(DebugViewOfDictionaryKeyCollection<,>))]
 	[DebuggerDisplay("Count = {Count}")]
@@ -282,7 +309,7 @@ public class OrderedDictionary<TKey, TValue> :
 		public void CopyTo(TKey[] array, int arrayIndex)
 		{
 			if (array == null) throw new ArgumentNullException(nameof(array));
-			if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+			if (arrayIndex < 0 || arrayIndex > array.Length) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 			if (array.Length - arrayIndex < _dictionary.Count) throw new ArgumentException();
 			
 			foreach (var p in _dictionary._list) array[arrayIndex++] = p.Key;
@@ -331,12 +358,12 @@ public class OrderedDictionary<TKey, TValue> :
 		public void Add(TValue item) => throw new InvalidOperationException();
 		public void Clear() => throw new InvalidOperationException();
 
-		public bool Contains(TValue item) => _dictionary._list.Any(x => ValueEquals(x.Value, x.Value));
+		public bool Contains(TValue item) => _dictionary._list.Any(x => EqualityComparer<TValue>.Default.Equals(x.Value, x.Value));
 
 		public void CopyTo(TValue[] array, int arrayIndex)
 		{
 			if (array == null) throw new ArgumentNullException(nameof(array));
-			if (arrayIndex < 0) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
+			if (arrayIndex < 0 || arrayIndex > array.Length) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 			if (array.Length - arrayIndex < _dictionary.Count) throw new ArgumentException();
 			
 			foreach (var p in _dictionary._list) array[arrayIndex++] = p.Value;
