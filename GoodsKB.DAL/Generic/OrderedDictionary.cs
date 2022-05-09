@@ -1,12 +1,12 @@
+namespace GoodsKB.DAL.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
-namespace GoodsKB.DAL.Generic;
-
 [DefaultMember("Item")]
-public interface IDictionary<TKey, TValue> : System.Collections.Generic.IDictionary<TKey, TValue> where TKey : notnull
+public interface IOrderedDictionary<TKey, TValue> : IDictionary<TKey, TValue> where TKey : notnull
 {
 	TKey KeyOf(int index);
 	int IndexOf(TKey key);
@@ -24,8 +24,8 @@ public class OrderedDictionary<TKey, TValue> :
 	ICollection<KeyValuePair<TKey, TValue>>,
 	IEnumerable<KeyValuePair<TKey, TValue>>,
 	IEnumerable,
-	System.Collections.Generic.IDictionary<TKey, TValue>,
 	IDictionary<TKey, TValue>,
+	IOrderedDictionary<TKey, TValue>,
 	IReadOnlyCollection<KeyValuePair<TKey, TValue>>,
 	IReadOnlyDictionary<TKey, TValue>,
 	ICollection,
@@ -41,7 +41,7 @@ public class OrderedDictionary<TKey, TValue> :
 		_list = new List<KeyValuePair<TKey, TValue>>();
 		_index = new Dictionary<TKey, int>();
 	}
-	public OrderedDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary)
+	public OrderedDictionary(IDictionary<TKey, TValue> dictionary)
 	{
 		_list = dictionary.ToList();
 		_index = new Dictionary<TKey, int>(_list.Count);
@@ -65,7 +65,7 @@ public class OrderedDictionary<TKey, TValue> :
 		_list = new List<KeyValuePair<TKey, TValue>>(capacity);
 		_index = new Dictionary<TKey, int>(capacity);
 	}
-	public OrderedDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer)
+	public OrderedDictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer)
 	{
 		_list = dictionary.ToList();
 		_index = new Dictionary<TKey, int>(_list.Count, comparer);
