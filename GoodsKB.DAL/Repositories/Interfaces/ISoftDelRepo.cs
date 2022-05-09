@@ -20,7 +20,7 @@ public interface ISoftDelRepo<TKey, TEntity, TDateTime> : IRepoBase<TKey, TEntit
 	where TDateTime : struct
 {
 	IQueryable<TEntity> GetEntities(SoftDelModes mode);
-	Task<long> GetCountAsync(SoftDelModes mode);
+	Task<long> GetCountAsync(SoftDelModes mode, Expression<Func<TEntity, bool>>? filter = null);
 	Task<TEntity?> GetAsync(SoftDelModes mode, TKey id);
 	Task<IEnumerable<TEntity>> GetAsync(SoftDelModes mode, Expression<Func<TEntity, bool>>? filter = null, int? limit = null);
 	Task<bool> RestoreAsync(TKey id);

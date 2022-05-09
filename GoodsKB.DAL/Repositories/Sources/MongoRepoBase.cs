@@ -46,10 +46,7 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 	protected ProjectionDefinitionBuilder<TEntity> _Projection => Builders<TEntity>.Projection;
 	protected IndexKeysDefinitionBuilder<TEntity> _IndexKeys => Builders<TEntity>.IndexKeys;
 
-	public virtual async Task<long> GetCountAsync()
-	{
-		return await _col.CountDocumentsAsync(_Filter.Empty);
-	}
+	public virtual async Task<long> GetCountAsync(Expression<Func<TEntity, bool>>? filter = null) => await _col.CountDocumentsAsync(filter ?? _Filter.Empty);
 
 	public virtual async Task<TEntity> CreateAsync(TEntity entity)
 	{
@@ -62,7 +59,7 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 
 	public virtual async Task<TEntity?> GetAsync(TKey id)
 	{
-		var filter = _Filter.Eq(item => item.Id, id);
+		var filter = _Filter.Eq(x => x.Id, id);
 		return await (await _col.FindAsync(filter)).SingleOrDefaultAsync();
 	}
 
@@ -70,32 +67,31 @@ internal class MongoRepoBase<TKey, TEntity> : IRepoBase<TKey, TEntity>
 	{
 		var options = new FindOptions<TEntity, TEntity> { Limit = limit };
 
-		if (filter == null)
-			return await (await _col.FindAsync(_Filter.Empty, options)).ToListAsync();
-		else
-			return await (await _col.FindAsync(filter, options)).ToListAsync();
+		return await (await _col.FindAsync(filter ?? _Filter.Empty, options)).ToListAsync();
 	}
 
 	public virtual async Task<bool> UpdateAsync(TEntity entity)
 	{
-		var filter = _Filter.Eq(existingItem => existingItem.Id, entity.Id);
+		var filter = _Filter.Eq(x => x.Id, entity.Id);
 		var options = new ReplaceOptions { IsUpsert = false };
 		var result = await _col.ReplaceOneAsync(filter, entity);
+		
 		return result.IsModifiedCountAvailable ? result.ModifiedCount != 0 : result.MatchedCount != 0;
 	}
 
 	public virtual async Task<TEntity> UpdateCreateAsync(TEntity entity)
 	{
-		var filter = _Filter.Eq(existingItem => existingItem.Id, entity.Id);
+		var filter = _Filter.Eq(x => x.Id, entity.Id);
 		var options = new ReplaceOptions { IsUpsert = true };
 		var result = await _col.ReplaceOneAsync(filter, entity, options);
 		if (result.ModifiedCount == 0) entity.Id = (TKey)BsonTypeMapper.MapToDotNetValue(result.UpsertedId);
+		
 		return await Task.FromResult(entity);
 	}
 
 	public virtual async Task<bool> DeleteAsync(TKey id)
 	{
-		var filter = _Filter.Eq(item => item.Id, id);
+		var filter = _Filter.Eq(x => x.Id, id);
 		var result = await _col.DeleteOneAsync(filter);
 		return await Task.FromResult(result.DeletedCount > 0);
 	}

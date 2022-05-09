@@ -84,24 +84,20 @@ public class UserService : IUserService
 
 	public async Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter)
 	{
-		if (filter != null)
-		{
-			var query = _repo.GetEntities(mode);//!!!
-		}
-		return await _repo.GetCountAsync(mode);
+		var cond = (Expression<Func<User, bool>>?) _repo.FilterCondition.BuildCondition(filter);
+		return await _repo.GetCountAsync(mode, cond);
 	}
 
 	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber)
 	{
 		var query = _repo.GetEntities(mode);
-
 		query = _repo.FilterCondition.Apply(query, filter);
 		query = _repo.SortOrderCondition.Apply(query, sort);
-
 		query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 
 		Console.WriteLine(((MongoDB.Driver.Linq.IMongoQueryable<User>)query).GetExecutionModel().ToString());//!!!
 
+		//_repo.GetAsync()
 		var items = await query.ToListAsync();
 		var mapped = _mapper.Map<IEnumerable<UserDto>>(items);
 		return mapped;

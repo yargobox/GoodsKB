@@ -16,7 +16,7 @@ public interface IRepoBase<TKey, TEntity>
 	IIdentityProvider<TKey>? IdentityProvider { get; }
 	IFilterConditionBuilder FilterCondition { get; }
 	ISortOrderConditionBuilder SortOrderCondition { get; }
-	Task<long> GetCountAsync();
+	Task<long> GetCountAsync(Expression<Func<TEntity, bool>>? filter = null);
 	Task<TEntity> CreateAsync(TEntity entity);
 	Task<TEntity?> GetAsync(TKey id);
 	Task<IEnumerable<TEntity>> GetAsync(Expression<Func<TEntity, bool>>? filter = null, int? limit = null);
