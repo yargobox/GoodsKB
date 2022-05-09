@@ -3,21 +3,19 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GoodsKB.API.Models;
 
-public sealed class PagedResponse<T>
-	where T : IEnumerable
+internal class PagedResponse<T>
 {
 	public int PageSize { get; set; }
 	public int PageNumber { get; set; }
-	public int TotalRows { get; set; }
-	public int TotalPages { get; set; }
-	public T Data { get; set; }
+	public long TotalRows { get; set; }
+	public long TotalPages => (long)Math.Ceiling((double)TotalRows / PageSize);
+	public IEnumerable<T> Data { get; set; }
 
-	public PagedResponse(T data, int pageSize, int pageNumber, int totalRows)
+	public PagedResponse(IEnumerable<T> data, int pageSize, int pageNumber, long totalRows)
 	{
 		Data = data;
 		PageSize = pageSize;
 		PageNumber = pageNumber;
 		TotalRows = totalRows;
-		TotalPages = (int) Math.Ceiling((double) totalRows / pageSize);
 	}
 }

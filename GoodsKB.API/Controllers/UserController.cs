@@ -1,14 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using AutoMapper;
 using GoodsKB.API.Filters;
+using GoodsKB.API.Helpers;
 using GoodsKB.API.Models;
-using GoodsKB.BLL.Common;
+using GoodsKB.API.SortOrders;
 using GoodsKB.BLL.DTOs;
 using GoodsKB.BLL.Services;
-using GoodsKB.DAL.Repositories.Filters;
 using Microsoft.AspNetCore.Mvc;
 using SoftDelModes = GoodsKB.DAL.Repositories.SoftDelModes;
-using User = GoodsKB.DAL.Entities.User;
 
 namespace GoodsKB.API.Controllers;
 
@@ -38,18 +37,26 @@ public class UserController : ControllerBase
 		[FromQuery][Range(1, int.MaxValue)] int? pageNumber
 	)
 	{
-		var softDelMode = Extensions.ParseSoftDelMode(delmode);
-		var filterValues = FiltersHelper.SerializeFromString(
-			_service.GetFilters<UserModel>(),
-			filter ?? string.Empty);
-		var sortParsed = (IEnumerable<FieldSortOrderItem>?)null;
-
+		pageSize ??= 10;
+		pageNumber ??= 1;
+		var softDelMode = SoftDelModeHelper.TryParse(delmode, SoftDelModes.Actual);
+		var filterValues = FiltersHelper.SerializeFromString(_service.GetFilters<UserModel>(), filter);
+		var sortOrderValues = SortOrdersHelper.SerializeFromString(_service.GetSortOrders<UserModel>(), sort);
+		
 		var totalRecords = await _service.GetCountAsync(softDelMode, filterValues);
+		
+		IEnumerable<UserModel> mapped;
+		if (totalRecords > 0)
+		{
+			var items = await _service.GetAsync(softDelMode, filterValues, sortOrderValues, pageSize.Value, pageNumber.Value);
+			mapped = _mapper.Map<IEnumerable<UserModel>>(items);
+		}
+		else
+		{
+			mapped = Enumerable.Empty<UserModel>();
+		}
 
-		var items = await _service.GetAsync(softDelMode, filterValues, sortParsed, pageSize ?? 10, pageNumber ?? 1);
-		var mapped = _mapper.Map<IEnumerable<UserModel>>(items) ?? Enumerable.Empty<UserModel>();
-
-		return Ok(new PagedResponse<IEnumerable<UserModel>>(mapped, pageSize ?? 10, pageNumber ?? 1, (int)totalRecords));
+		return Ok(new PagedResponse<UserModel>(mapped, pageSize.Value, pageNumber.Value, totalRecords));
 	}
 
 	[HttpGet("{id}")]

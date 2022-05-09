@@ -1,13 +1,15 @@
 using GoodsKB.DAL.Repositories.Filters;
+using GoodsKB.DAL.Repositories.SortOrders;
 using UserRoles = GoodsKB.DAL.Entities.UserRoles;
 
 namespace GoodsKB.API.Models;
 
 public class UserModel
 {
-	[Filter(Position = 1)]
+	[Filter(Position = 1), SortOrder]
 	public int Id { get; set; }
 
+	[SortOrder(SO.Ascending)]
 	[Filter(Visible = false)]
 	[GroupFilter("Name", Position = 3)]
 	public string Username { get; set; } = string.Empty;
@@ -30,6 +32,7 @@ public class UserModel
 	
 	public virtual IEnumerable<DirectionModel> Directions {get; set; } = new List<DirectionModel>();
 	
+	[SortOrder(SO.Descending, SOs.All)]
 	[GroupFilter("Modified", Position = 1, ConditionOrder = 2)]
 	[Filter(Position = 2)]
 	public DateTimeOffset Created { get; set; }

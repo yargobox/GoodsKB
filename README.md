@@ -55,3 +55,8 @@
 ### Mongo
 
 `docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 mongo`
+
+## To consider
+
+- Ordering of text search results stackoverflow.com/questions/24688161/retrieve-relevance-ordered-result-from-text-query-on-mongodb-collection-using-th
+- Filters for text search

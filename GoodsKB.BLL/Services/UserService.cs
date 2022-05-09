@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using AutoMapper;
 using GoodsKB.BLL.Common;
@@ -10,14 +9,16 @@ using GoodsKB.DAL.Linq;
 using GoodsKB.DAL.Repositories;
 using GoodsKB.DAL.Repositories.Filters;
 using GoodsKB.DAL.Repositories.Mongo;
+using GoodsKB.DAL.Repositories.SortOrders;
 
 namespace GoodsKB.BLL.Services;
 
 public interface IUserService
 {
 	IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() where TDto : notnull;
+	IReadOnlyDictionary<string, SortOrderDesc> GetSortOrders<TDto>() where TDto : notnull;
 	Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter);
-	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber);
+	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber);
 	Task<UserDto> GetAsync(int id);
 	Task<int> CreateAsync(UserCreateDto dto);
 	Task UpdateAsync(int id, UserUpdateDto dto);
@@ -38,7 +39,8 @@ public class UserService : IUserService
 		_repo = _context.Users;
 	}
 
-	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() where TDto : notnull => _repo.ConditionBuilder.GetFilters<TDto>();
+	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() where TDto : notnull => _repo.FilterCondition.GetFilters<TDto>();
+	public IReadOnlyDictionary<string, SortOrderDesc> GetSortOrders<TDto>() where TDto : notnull => _repo.SortOrderCondition.GetSortOrders<TDto>();
 
 	public async Task<int> CreateAsync(UserCreateDto dto)
 	{
@@ -89,15 +91,12 @@ public class UserService : IUserService
 		return await _repo.GetCountAsync(mode);
 	}
 
-	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, IEnumerable<FieldSortOrderItem>? sort, int pageSize, int pageNumber)
+	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber)
 	{
 		var query = _repo.GetEntities(mode);
 
-		var cond = (Expression<Func<User, bool>>?) _repo.ConditionBuilder.BuildCondition(filter);
-		if (cond != null)
-		{
-			query = query.Where(cond);
-		}
+		query = _repo.FilterCondition.Apply(query, filter);
+		query = _repo.SortOrderCondition.Apply(query, sort);
 
 		query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using GoodsKB.DAL.Repositories.Filters;
+using GoodsKB.DAL.Repositories.SortOrders;
 
 namespace GoodsKB.DAL.Repositories;
 
@@ -13,7 +14,8 @@ public interface IRepoBase<TKey, TEntity>
 {
 	IQueryable<TEntity> Entities { get; }
 	IIdentityProvider<TKey>? IdentityProvider { get; }
-	IFilterConditionBuilder ConditionBuilder { get; }
+	IFilterConditionBuilder FilterCondition { get; }
+	ISortOrderConditionBuilder SortOrderCondition { get; }
 	Task<long> GetCountAsync();
 	Task<TEntity> CreateAsync(TEntity entity);
 	Task<TEntity?> GetAsync(TKey id);

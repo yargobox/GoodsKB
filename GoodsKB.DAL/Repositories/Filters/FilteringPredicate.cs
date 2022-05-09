@@ -3,7 +3,7 @@ using System.Reflection;
 
 namespace GoodsKB.DAL.Repositories.Filters;
 
-internal static class PropertyPredicate<TEntity>
+internal static class FilteringPredicate<TEntity>
 {
 	public static readonly ParameterExpression EntityParameter = Expression.Parameter(typeof(TEntity), "item");
 	public static readonly MethodInfo ToLowerMethodInfo = typeof(string).GetMethod("ToLower", new Type[] { })!;

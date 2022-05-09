@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using GoodsKB.API.Extensions.Text;
 using GoodsKB.DAL.Repositories.Filters;
-using System.Collections.ObjectModel;
 
 namespace GoodsKB.API.Filters;
 
@@ -13,46 +13,49 @@ internal static class FiltersHelper
 		_dotNumberFormatInvariantCulture.NumberFormat.CurrencyDecimalSeparator = ".";
 	}
 
-	public static string? SerializeToString(ReadOnlyDictionary<string, FilterDesc> filters, FilterValues? items)
+	public static string? SerializeToString(FilterValues? values)
 	{
 		throw new NotSupportedException();
 	}
 
 	/// <summary>
-	/// 
+	/// Serializes filter values from string
+	/// </summary>
+	/// <remarks>
 	/// Flags:
 	/// TrueWhenNull: [n]
 	/// CaseInsensitive: [i]
 	/// CaseInsensitiveInvariant: [v]
 	///
 	/// Operations:
-	/// IsNull:			nl[-n]|{name}
-	/// IsNotNull:		nnl[-n]|{name}
-	/// Equal:			eq[-niv]|{name}[|[arg1]]
-	/// NotEqual:		neq[-niv]|{name}[|[arg1]]
-	/// In:				in[-niv]|{name}[|[arg1],[arg2]...]
-	/// NotIn:			nin[-niv]|{name}[|[arg1],[arg2]...]
-	/// Greater:		gt[-n]|{name}[|[arg1]]
-	/// GreaterOrEqual:	gte[-n]|{name}[|[arg1]]
-	/// Less:			lt[-n]|{name}[|[arg1]]
-	/// LessOrEqual:	lte[-n]|{name}[|[arg1]]
-	/// Between:		bw[-n]|{name}|[arg1],[arg2]
-	/// NotBetween:		nbw[-n]|{name}|[arg1],[arg2]
-	/// Like:			lk[-niv]|{name}[|[arg1]]
-	/// NotLike:		nlk[-niv]|{name}[|[arg1]]
-	/// BitsAnd:		all[-n]|{name}[|[arg1]]
-	/// BitsOr:			any[-n]|{name}[|[arg1]]
-	/// </summary>
+	/// IsNull:			 {name}[|-n]
+	/// IsNotNull:		!{name}[|-n]
+	/// Equal:			 {name}[|-niv]=[arg1]
+	/// NotEqual:		!{name}[|-niv]=[arg1]
+	/// In:				 {name}[|-niv]:[[arg1],[arg2]...]
+	/// NotIn:			!{name}[|-niv]:[[arg1],[arg2]...]
+	/// Greater:		 {name}[|-n]>[arg1]
+	/// GreaterOrEqual:	 {name}[|-n]>=[arg1]
+	/// Less:			 {name}[|-n]<[arg1]
+	/// LessOrEqual:	 {name}[|-n]<=[arg1]
+	/// Between:		 {name}[|-n]-[arg1],[arg2]
+	/// NotBetween:		!{name}[|-n]-[arg1],[arg2]
+	/// Like:			 {name}[|-niv]~[arg1]
+	/// NotLike:		!{name}[|-niv]~[arg1]
+	/// BitsAnd:		 {name}[|-n].=[arg1]
+	/// BitsOr:			 {name}[|-n].~[arg1]  or {name}[|-n]~[arg1]
+	/// 
+	/// Flags 'i' and 'v' cannot be used together.
+	/// </remarks>
 	/// <param name="filters">Filter descriptions of DTO or database entity class itself</param>
-	/// <param name="filter"></param>
-	/// <returns></returns>
+	/// <param name="filter">Filter input string to parse</param>
 	/// <exception cref="InvalidOperationException"></exception>
 	/// <exception cref="FormatException"></exception>
 	public static FilterValues? SerializeFromString(IReadOnlyDictionary<string, FilterDesc> filters, string? filter)
 	{
 		if (string.IsNullOrWhiteSpace(filter)) return null;
 
-		var filterStringValues = SplitStringAndUnescapeDelimiter('\\', ';', filter, true);
+		var filterStringValues = filter.UnescapeAndSplit(';', StringSplitOptions.RemoveEmptyEntries, '\\');
 		var filterValues = new FilterValue[filterStringValues.Length];
 		int i = 0;
 		FO trueOperation;
@@ -118,7 +121,8 @@ internal static class FiltersHelper
 			}
 			else if ((trueOperation & (FO.Between | FO.NotBetween)) != 0)
 			{
-				var arr = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!)
+				var arr = p.arguments!
+					.UnescapeAndSplit(',', StringSplitOptions.None, '\\')
 					.Select(x => ParseFilterValue(fd.UnderlyingType, x))
 					.ToArray();
 				if (!fd.IsNullAllowed && arr.Any(x => x == null))
@@ -139,7 +143,8 @@ internal static class FiltersHelper
 			}
 			else if ((trueOperation & (FO.In | FO.NotIn)) != 0)
 			{
-				var arr1 = SplitStringAndUnescapeDelimiter('\\', ',', p.arguments!)
+				var arr1 = p.arguments!
+					.UnescapeAndSplit(',', StringSplitOptions.None, '\\')
 					.Select(x => ParseFilterValue(fd.UnderlyingType, x));
 				if (!fd.IsNullAllowed && arr1.Any(x => x == null))
 				{
@@ -209,60 +214,6 @@ internal static class FiltersHelper
 		throw new FormatException();
 	}
 	
-	/// <summary>
-	/// Split string and unescape it by given delimiter character.
-	/// </summary>
-	/// <param name="delimiter"></param>
-	/// <param name="input">An escaped input string in which the delimiter is escaped by two consecutive delimiter characters.</param>
-	/// <exception cref="FormatException"></exception>
-	private static string[] SplitStringAndUnescapeDelimiter(char escape, char delimiter, string input, bool removeEmptyEntries = false)
-	{
-		if (!input.Contains(escape))
-		{
-			return input.Split(delimiter, removeEmptyEntries ? StringSplitOptions.RemoveEmptyEntries : StringSplitOptions.None);
-		}
-
-		var escapeEscape = new string(escape, 2);
-		var escapeDelimiter = string.Concat(escape, delimiter);
-		var sescape = new string(escape, 1);
-		var sdelimiter = new string(delimiter, 1);
-
-		var list = new List<string>();
-		int i = 0, j, k = 0;
-		while ((j = input.IndexOf(delimiter, i)) >= 0)
-		{
-			if (ConsecutiveBackwordCharCount(input, j - 1, escape) % 2 == 0)
-			{
-				if (j + 1 < input.Length)
-				{
-					list.Add(input.Substring(k, j - k).Replace(escapeEscape, sescape).Replace(escapeDelimiter, sdelimiter));
-					k = i = j + 1;
-				}
-				else
-				{
-					break;
-				}
-			}
-			else if (j + 1 < input.Length)
-			{
-				i = j + 1;
-			}
-			else
-			{
-				break;
-			}
-		}
-		list.Add(input.Substring(k, input.Length - k).Replace(escapeEscape, sescape).Replace(escapeDelimiter, sdelimiter));
-
-		return list.Where(x => removeEmptyEntries ? x.Length > 0 : true).ToArray();
-	}
-	private static int ConsecutiveBackwordCharCount(string input, int startIndex, char charToCount)
-	{
-		int count = 0;
-		while (startIndex >= 0 && input[startIndex--] == charToCount) count++;
-		return count;
-	}
-
 	private static object? ParseFilterValue(Type operandType, string? value)
 	{
 		Func<string?, object?>? converter;
