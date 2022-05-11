@@ -1,4 +1,6 @@
+namespace GoodsKB.API.Controllers;
 using System.ComponentModel.DataAnnotations;
+using System.Linq.Expressions;
 using AutoMapper;
 using GoodsKB.API.Filters;
 using GoodsKB.API.Helpers;
@@ -6,10 +8,10 @@ using GoodsKB.API.Models;
 using GoodsKB.API.SortOrders;
 using GoodsKB.BLL.DTOs;
 using GoodsKB.BLL.Services;
+using GoodsKB.DAL.Repositories.Mongo;
 using Microsoft.AspNetCore.Mvc;
-using SoftDelModes = GoodsKB.DAL.Repositories.SoftDelModes;
-
-namespace GoodsKB.API.Controllers;
+using SoftDel = GoodsKB.DAL.Repositories.SoftDel;
+using User = GoodsKB.DAL.Entities.User;
 
 [ApiController]
 [Route("api/[controller]s")]
@@ -37,9 +39,51 @@ public class UserController : ControllerBase
 		[FromQuery][Range(1, int.MaxValue)] int? pageNumber
 	)
 	{
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		///
+		/* var q = _service.Q;
+		var c = _service.C;
+		var next = false;
+		var orders = _service.GetSortOrders<UserModel>()["Id"];
+		var orderValue = new GoodsKB.DAL.Repositories.SortOrders.SortOrderValue("Id") { Operation = DAL.Repositories.SortOrders.SO.Ascending };
+		var entityParameter = Expression.Parameter(typeof(User), "item");
+		var propInfo = typeof(User).GetProperty(orderValue.PropertyName)
+			?? throw new InvalidOperationException($"{typeof(User).Name} does not have a property {orderValue.PropertyName}.");
+		var propMember = Expression.MakeMemberAccess(entityParameter, propInfo);
+		var orderByExp = Expression.Lambda(propMember, entityParameter);
+		var methodName = next ?
+			(orderValue.Operation.HasFlag(DAL.Repositories.SortOrders.SO.Ascending) ? "ThenBy" : "ThenByDescending") :
+			(orderValue.Operation.HasFlag(DAL.Repositories.SortOrders.SO.Ascending) ? "OrderBy" : "OrderByDescending");
+		var predicate = Expression.Call(
+			typeof(Queryable),
+			methodName,
+			new Type[] { typeof(User), propInfo.PropertyType },
+			q.Expression,
+			Expression.Quote(orderByExp));
+
+		q = q.Provider.CreateQuery<User>(predicate);
+
+		var o1 = MongoDB.Driver.Builders<User>.Sort.Ascending(x => x.Id);
+		var o2 = MongoDB.Driver.Builders<User>.Sort.Ascending(x => x.Deleted);
+		var o3 = MongoDB.Driver.Builders<User>.Sort.Combine(o1, o2);
+
+		var s = o3.Render(c.DocumentSerializer, c.Settings.SerializerRegistry).ToString();
+		Console.WriteLine(s);
+		Console.WriteLine(q.ToString());
+
+		MongoDB.Driver.SortDefinition<User> o4 = @"{ ""_id"" : 1, ""Deleted"" : 1 }";
+		var s = o4.Render(c.DocumentSerializer, c.Settings.SerializerRegistry).ToString();
+		Console.WriteLine(s);
+
+		Test<User>(OrderBy.Asc(x => x.Deleted).Desc(x => x.Created)); */
+
+		///
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 		pageSize ??= 10;
 		pageNumber ??= 1;
-		var softDelMode = SoftDelModeHelper.TryParse(delmode, SoftDelModes.Actual);
+		var softDelMode = SoftDelHelper.TryParse(delmode, SoftDel.Actual);
 		var filterValues = FiltersHelper.SerializeFromString(_service.GetFilters<UserModel>(), filter);
 		var sortOrderValues = SortOrdersHelper.SerializeFromString(_service.GetSortOrders<UserModel>(), sort);
 		

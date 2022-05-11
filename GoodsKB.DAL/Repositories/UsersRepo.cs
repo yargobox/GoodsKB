@@ -4,7 +4,7 @@ using GoodsKB.DAL.Repositories.Mongo;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class UsersRepo : MongoSoftDelRepo<int, User, DateTimeOffset>
+internal class UsersRepo : SoftDelRepoMongo<int, User, DateTimeOffset>
 {
 	public UsersRepo(IMongoDbContext context)
 		: base(context, "users",
@@ -36,7 +36,7 @@ internal class TestRec : IIdentifiableEntity<string>, ISoftDelEntity<DateTimeOff
 	public DateTimeOffset? Deleted { get; set; }
 }
 
-internal class TestRepo : MongoSoftDelRepo<string, TestRec, DateTimeOffset>
+internal class TestRepo : SoftDelRepoMongo<string, TestRec, DateTimeOffset>
 {
 	public TestRepo(IMongoDbContext context)
 		: base(context, "tests")

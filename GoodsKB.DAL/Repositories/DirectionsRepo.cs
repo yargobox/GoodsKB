@@ -4,7 +4,7 @@ using GoodsKB.DAL.Repositories.Mongo;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class DirectionsRepo : MongoSoftDelRepo<int, Direction, DateTimeOffset>
+internal class DirectionsRepo : SoftDelRepoMongo<int, Direction, DateTimeOffset>
 {
 	public DirectionsRepo(IMongoDbContext context)
 		: base(context, "directions",

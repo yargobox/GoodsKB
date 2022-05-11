@@ -3,24 +3,24 @@ using GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.API.Helpers;
 
-internal static class SoftDelModeHelper
+internal static class SoftDelHelper
 {
-	public static bool TryParse(string? s, out SoftDelModes softDelMode)
+	public static bool TryParse(string? s, out SoftDel softDelMode)
 	{
 		if (string.IsNullOrWhiteSpace(s))
 		{
-			softDelMode = SoftDelModes.Actual;
+			softDelMode = SoftDel.Actual;
 			return false;
 		}
 
 		int n;
-		if (int.TryParse(s, NumberStyles.Integer, null, out n) && Enum.GetValues<SoftDelModes>().Cast<int>().Contains(n))
+		if (int.TryParse(s, NumberStyles.Integer, null, out n) && Enum.GetValues<SoftDel>().Cast<int>().Contains(n))
 		{
-			softDelMode = (SoftDelModes)n;
+			softDelMode = (SoftDel)n;
 			return true;
 		}
 
-		if (Enum.TryParse<SoftDelModes>(s, true, out softDelMode))
+		if (Enum.TryParse<SoftDel>(s, true, out softDelMode))
 		{
 			return true;
 		}
@@ -28,7 +28,7 @@ internal static class SoftDelModeHelper
 		return false;
 	}
 
-	public static SoftDelModes TryParse(string? s, SoftDelModes @default)
+	public static SoftDel TryParse(string? s, SoftDel @default)
 	{
 		if (string.IsNullOrWhiteSpace(s))
 		{
@@ -36,13 +36,13 @@ internal static class SoftDelModeHelper
 		}
 
 		int n;
-		if (int.TryParse(s, NumberStyles.Integer, null, out n) && Enum.GetValues<SoftDelModes>().Cast<int>().Contains(n))
+		if (int.TryParse(s, NumberStyles.Integer, null, out n) && Enum.GetValues<SoftDel>().Cast<int>().Contains(n))
 		{
-			return (SoftDelModes)n;
+			return (SoftDel)n;
 		}
 
-		SoftDelModes softDelMode;
-		if (Enum.TryParse<SoftDelModes>(s, true, out softDelMode))
+		SoftDel softDelMode;
+		if (Enum.TryParse<SoftDel>(s, true, out softDelMode))
 		{
 			return softDelMode;
 		}
@@ -50,9 +50,9 @@ internal static class SoftDelModeHelper
 		return @default;
 	}
 
-	public static SoftDelModes Parse(string? s)
+	public static SoftDel Parse(string? s)
 	{
-		SoftDelModes softDelMode;
+		SoftDel softDelMode;
 		if (TryParse(s, out softDelMode))
 			return softDelMode;
 

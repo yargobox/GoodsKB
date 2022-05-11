@@ -1,8 +1,11 @@
-using System.Linq.Expressions;
-
 namespace GoodsKB.DAL.Repositories;
 
-public enum SoftDelModes
+using System.Linq.Expressions;
+
+/// <summary>
+/// Soft Delete Mode
+/// </summary>
+public enum SoftDel
 {
 	Actual = 0,
 	Deleted = 1,
@@ -15,14 +18,15 @@ public interface ISoftDelEntity<TDateTime>
 	TDateTime? Deleted { get; set; }
 }
 
-public interface ISoftDelRepo<TKey, TEntity, TDateTime> : IRepoBase<TKey, TEntity>
-	where TEntity : class, IIdentifiableEntity<TKey>, ISoftDelEntity<TDateTime>
+public interface ISoftDelRepo<K, T, TDateTime> : IRepo<K, T>
+	where K : notnull
+	where T : IIdentifiableEntity<K>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
-	IQueryable<TEntity> GetEntities(SoftDelModes mode);
-	Task<long> GetCountAsync(SoftDelModes mode, Expression<Func<TEntity, bool>>? filter = null);
-	Task<TEntity?> GetAsync(SoftDelModes mode, TKey id);
-	Task<IEnumerable<TEntity>> GetAsync(SoftDelModes mode, Expression<Func<TEntity, bool>>? filter = null, int? limit = null);
-	Task<bool> RestoreAsync(TKey id);
-	Task<long> RestoreAsync(Expression<Func<TEntity, bool>> filter);
+	IQueryable<T> GetQuery(SoftDel mode = SoftDel.All);
+	Task<long> GetCountAsync(SoftDel mode, Expression<Func<T, bool>>? where = null);
+	Task<T?> GetAsync(SoftDel mode, K id);
+	Task<IEnumerable<T>> GetAsync(SoftDel mode, Expression<Func<T, bool>>? where = null, OrderBy<T>? orderBy = null, long? skip = null, int? take = null);
+	Task<bool> RestoreAsync(K id);
+	Task<long> RestoreAsync(Expression<Func<T, bool>> where);
 }

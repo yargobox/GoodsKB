@@ -4,7 +4,7 @@ using GoodsKB.DAL.Repositories.Mongo;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class ProdCats2Repo : MongoSoftDelRepo<int, ProdCat2, DateTimeOffset>
+internal class ProdCats2Repo : SoftDelRepoMongo<int, ProdCat2, DateTimeOffset>
 {
 	public ProdCats2Repo(IMongoDbContext context)
 		: base(context, "product_categories_2",

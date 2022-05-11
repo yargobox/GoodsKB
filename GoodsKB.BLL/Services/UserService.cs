@@ -17,20 +17,26 @@ public interface IUserService
 {
 	IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() where TDto : notnull;
 	IReadOnlyDictionary<string, SortOrderDesc> GetSortOrders<TDto>() where TDto : notnull;
-	Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter);
-	Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber);
+	Task<long> GetCountAsync(SoftDel mode, FilterValues? filter);
+	Task<IEnumerable<UserDto>> GetAsync(SoftDel mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber);
 	Task<UserDto> GetAsync(int id);
 	Task<int> CreateAsync(UserCreateDto dto);
 	Task UpdateAsync(int id, UserUpdateDto dto);
 	Task DeleteAsync(int id);
 	Task RestoreAsync(int id);
+
+	IQueryable<User> Q { get; }//!!!
+	MongoDB.Driver.IMongoCollection<User> C { get; }//!!!
 }
 
 public class UserService : IUserService
 {
+	public IQueryable<User> Q => _repo.Query;
+	public MongoDB.Driver.IMongoCollection<User> C => _repo.Collection;
+
 	private readonly IMapper _mapper;
 	private readonly IDALContext _context;
-	private readonly IMongoSoftDelRepo<int, User, DateTimeOffset> _repo;
+	private readonly ISoftDelRepoMongo<int, User, DateTimeOffset> _repo;
 
 	public UserService(IDALContext context, IMapper mapper)
 	{
@@ -39,8 +45,8 @@ public class UserService : IUserService
 		_repo = _context.Users;
 	}
 
-	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() where TDto : notnull => _repo.FilterCondition.GetFilters<TDto>();
-	public IReadOnlyDictionary<string, SortOrderDesc> GetSortOrders<TDto>() where TDto : notnull => _repo.SortOrderCondition.GetSortOrders<TDto>();
+	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>() where TDto : notnull => _repo.FilterBuilder.GetFilters<TDto>();
+	public IReadOnlyDictionary<string, SortOrderDesc> GetSortOrders<TDto>() where TDto : notnull => _repo.SortOrderBuilder.GetSortOrders<TDto>();
 
 	public async Task<int> CreateAsync(UserCreateDto dto)
 	{
@@ -82,17 +88,17 @@ public class UserService : IUserService
 		return (await _repo.CreateAsync(item)).Id;
 	}
 
-	public async Task<long> GetCountAsync(SoftDelModes mode, FilterValues? filter)
+	public async Task<long> GetCountAsync(SoftDel mode, FilterValues? filter)
 	{
-		var cond = (Expression<Func<User, bool>>?) _repo.FilterCondition.BuildCondition(filter);
+		var cond = (Expression<Func<User, bool>>?) _repo.FilterBuilder.BuildCondition(filter);
 		return await _repo.GetCountAsync(mode, cond);
 	}
 
-	public async Task<IEnumerable<UserDto>> GetAsync(SoftDelModes mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber)
+	public async Task<IEnumerable<UserDto>> GetAsync(SoftDel mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber)
 	{
-		var query = _repo.GetEntities(mode);
-		query = _repo.FilterCondition.Apply(query, filter);
-		query = _repo.SortOrderCondition.Apply(query, sort);
+		var query = _repo.GetQuery(mode);
+		query = _repo.FilterBuilder.Apply(query, filter);
+		query = _repo.SortOrderBuilder.Apply(query, sort);
 		query = query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
 
 		Console.WriteLine(((MongoDB.Driver.Linq.IMongoQueryable<User>)query).GetExecutionModel().ToString());//!!!
@@ -141,7 +147,7 @@ public class UserService : IUserService
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 			
-		if ((await _repo.GetAsync(SoftDelModes.All, filter)).FirstOrDefault() != null)
+		if ((await _repo.GetAsync(SoftDel.All, filter)).FirstOrDefault() != null)
 			throw new Conflict409Exception("The username, email or phone already exist");
 
 		//var item = _mapper.Map<User>(dto);

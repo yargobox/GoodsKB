@@ -7,13 +7,13 @@ namespace GoodsKB.DAL;
 
 public interface IDALContext
 {
-	IMongoSoftDelRepo<int, User, DateTimeOffset> Users { get; }
-	IMongoSoftDelRepo<int, Direction, DateTimeOffset> Directions { get; }
-	IMongoSoftDelRepo<int, ProdCat1, DateTimeOffset> ProdCats1 { get; }
-	IMongoSoftDelRepo<int, ProdCat2, DateTimeOffset> ProdCats2 { get; }
-	IMongoSoftDelRepo<int, ProdCat3, DateTimeOffset> ProdCats3 { get; }
-	IMongoSoftDelRepo<int, Product, DateTimeOffset> Products { get; }
-	IMongoSoftDelRepo<int, Brand, DateTimeOffset> Brands { get; }
+	ISoftDelRepoMongo<int, User, DateTimeOffset> Users { get; }
+	ISoftDelRepoMongo<int, Direction, DateTimeOffset> Directions { get; }
+	ISoftDelRepoMongo<int, ProdCat1, DateTimeOffset> ProdCats1 { get; }
+	ISoftDelRepoMongo<int, ProdCat2, DateTimeOffset> ProdCats2 { get; }
+	ISoftDelRepoMongo<int, ProdCat3, DateTimeOffset> ProdCats3 { get; }
+	ISoftDelRepoMongo<int, Product, DateTimeOffset> Products { get; }
+	ISoftDelRepoMongo<int, Brand, DateTimeOffset> Brands { get; }
 }
 
 public class DALContext : IDALContext
@@ -29,11 +29,11 @@ public class DALContext : IDALContext
 		Brands = new BrandsRepo(mongoDbContext);
 	}
 
-	public IMongoSoftDelRepo<int, User, DateTimeOffset> Users { get; }
-	public IMongoSoftDelRepo<int, Direction, DateTimeOffset> Directions { get; }
-	public IMongoSoftDelRepo<int, ProdCat1, DateTimeOffset> ProdCats1 { get; }
-	public IMongoSoftDelRepo<int, ProdCat2, DateTimeOffset> ProdCats2 { get; }
-	public IMongoSoftDelRepo<int, ProdCat3, DateTimeOffset> ProdCats3 { get; }
-	public IMongoSoftDelRepo<int, Product, DateTimeOffset> Products { get; }
-	public IMongoSoftDelRepo<int, Brand, DateTimeOffset> Brands { get; }
+	public ISoftDelRepoMongo<int, User, DateTimeOffset> Users { get; }
+	public ISoftDelRepoMongo<int, Direction, DateTimeOffset> Directions { get; }
+	public ISoftDelRepoMongo<int, ProdCat1, DateTimeOffset> ProdCats1 { get; }
+	public ISoftDelRepoMongo<int, ProdCat2, DateTimeOffset> ProdCats2 { get; }
+	public ISoftDelRepoMongo<int, ProdCat3, DateTimeOffset> ProdCats3 { get; }
+	public ISoftDelRepoMongo<int, Product, DateTimeOffset> Products { get; }
+	public ISoftDelRepoMongo<int, Brand, DateTimeOffset> Brands { get; }
 }
