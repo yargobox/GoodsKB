@@ -1,26 +1,31 @@
 using System.Diagnostics;
+using System.Reflection;
 
 namespace GoodsKB.DAL.Repositories.SortOrders;
 
 [DebuggerDisplay("{PropertyName,nq}: {Default.ToString(),nq}")]
 public sealed record SortOrderDesc
 {
-	public SortOrderDesc(string propertyName, Type operandType, Type underlyingType)
+	public SortOrderDesc(PropertyInfo propertyInfo, Type underlyingType)
 	{
-		PropertyName = propertyName;
-		OperandType = operandType;
+		PropertyInfo = propertyInfo;
 		UnderlyingType = underlyingType;
 	}
 
 	/// <summary>
+	/// Entity property info
+	/// </summary>
+	public PropertyInfo PropertyInfo { get; init; }
+
+	/// <summary>
 	/// Entity property name
 	/// </summary>
-	public string PropertyName { get; init; }
+	public string PropertyName => PropertyInfo.Name;
 
 	/// <summary>
 	/// Property data type
 	/// </summary>
-	public Type OperandType { get; init; }
+	public Type OperandType => PropertyInfo.PropertyType;
 
 	/// <summary>
 	/// Underlying system data type for the property (without Nullable struct)

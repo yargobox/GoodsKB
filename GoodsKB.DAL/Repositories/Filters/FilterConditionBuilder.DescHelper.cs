@@ -1,13 +1,13 @@
+namespace GoodsKB.DAL.Repositories.Filters;
+
 using System.Reflection;
 using GoodsKB.DAL.Extensions.Linq;
 using GoodsKB.DAL.Extensions.Reflection;
 using GoodsKB.DAL.Generic;
 
-namespace GoodsKB.DAL.Repositories.Filters;
-
-internal sealed partial class FilterConditionBuilder<TEntity>
+public static partial class FilterConditionBuilder
 {
-	static class DescHelper<TDto> where TDto : notnull
+	static class DescHelper<T, TDto> where T : notnull where TDto : notnull
 	{
 		public static IReadOnlyDictionary<string, FilterDesc> Filters { get; }
 		private static readonly FilterAttribute _defaultFilterAttribute = new FilterAttribute();
@@ -19,8 +19,8 @@ internal sealed partial class FilterConditionBuilder<TEntity>
 				.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
 				.Select(x => (
 					dtoProp: x,
-					entityProp: typeof(TEntity).GetProperty(x.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty) ??
-						throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property {x.Name}."),
+					entityProp: typeof(T).GetProperty(x.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty) ??
+						throw new InvalidOperationException($"{typeof(T).Name} does not have a property {x.Name}."),
 					filterAttr: x.GetCustomAttributeOfExactType<FilterAttribute>(false),
 					groupAttrs: x.GetCustomAttributesOfExactType<GroupFilterAttribute>(false),
 					partAttrs: x.GetCustomAttributesOfExactType<FilterPartAttribute>(false)))
@@ -207,7 +207,7 @@ internal sealed partial class FilterConditionBuilder<TEntity>
 
 			if (!propType.IsAssignableFrom(dtoProp.PropertyType))
 			{
-				throw new InvalidOperationException($"{typeof(TEntity).Name}.{entityProp.Name} is not compatible with {typeof(TDto).Name}.{entityProp.Name}.");
+				throw new InvalidOperationException($"{typeof(T).Name}.{entityProp.Name} is not compatible with {typeof(TDto).Name}.{entityProp.Name}.");
 			}
 
 			var initials = filterAttr.GetInitialValues();

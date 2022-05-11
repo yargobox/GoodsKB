@@ -27,8 +27,6 @@ internal class MongoRepo<K, T> : IRepo<K, T>
 		_context = context;
 		_collectionName = collectionName;
 		IdentityProvider = identityProvider;
-		FilterBuilder = new FilterConditionBuilder<T>();
-		SortOrderBuilder = new SortOrderConditionBuilder<T>();
 
 		var filter = Builders<BsonDocument>.Filter.Eq("name", _collectionName);
 		var options = new ListCollectionNamesOptions { Filter = filter };
@@ -45,8 +43,6 @@ internal class MongoRepo<K, T> : IRepo<K, T>
 
 	public virtual IQueryable<T> Query => _col.AsQueryable<T>();
 	public IIdentityProvider<K>? IdentityProvider { get; }
-	public IFilterConditionBuilder FilterBuilder { get; }
-	public ISortOrderConditionBuilder SortOrderBuilder { get; }
 
 	public virtual async Task<long> GetCountAsync(Expression<Func<T, bool>>? where = null) => await _col.CountDocumentsAsync(where ?? _Filter.Empty);
 

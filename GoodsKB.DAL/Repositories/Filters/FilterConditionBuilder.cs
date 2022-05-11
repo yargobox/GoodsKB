@@ -1,36 +1,45 @@
+namespace GoodsKB.DAL.Repositories.Filters;
+
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 using GoodsKB.DAL.Extensions.Linq;
 
-namespace GoodsKB.DAL.Repositories.Filters;
-
-internal sealed partial class FilterConditionBuilder<TEntity> : IFilterConditionBuilder where TEntity : notnull
+/// <summary>
+/// Filter conditions builder
+/// </summary>
+/// <remarks>
+/// Provides information about defined filters (<c>FilterAttribute</c>, <c>GroupFilterAttribute</c>,
+/// <c>FilterPartAttribute</c>) for DTO properties and functionality for building and applying
+/// custom filtering conditions to an IQueryable instance based on them.
+/// </remarks>
+public static partial class FilterConditionBuilder
 {
-	public IReadOnlyDictionary<string, FilterDesc> GetFilters<TDto>()  where TDto : notnull => DescHelper<TDto>.Filters;
+	public static IReadOnlyDictionary<string, FilterDesc> GetFilters<T, TDto>() where T : notnull where TDto : notnull
+		=> DescHelper<T, TDto>.Filters;
 
-	public T Apply<T>(T queryable, FilterValues? values) where T : IQueryable
+	public static IQueryable<T> Where<T>(this IQueryable<T> @this, FilterValues? values)
 	{
-		if (values == null) return queryable;
+		if (values == null) return @this;
 
-		var q = queryable as IQueryable<TEntity>;
-		if (q == null)
-			throw new ArgumentException(nameof(queryable));
+		var cond = values.BuildCondition<T>();
+		@this = @this.Where(cond);
 
-		var cond = (Expression<Func<TEntity, bool>>) BuildCondition(values);
-		q = q.Where(cond);
-
-		return (T)q;
+		return @this;
 	}
 
 	[return: NotNullIfNotNull("values")]
-	public Expression? BuildCondition(FilterValues? values)
+	public static Expression<Func<T, bool>>? BuildCondition<T>(this FilterValues? values)
 	{
-		return values != null ? Expression.Lambda<Func<TEntity, bool>>(BuildConditionPredicate(values), FilteringPredicate<TEntity>.EntityParameter) : null;
+		return values != null ?
+			Expression.Lambda<Func<T, bool>>(
+				BuildConditionPredicate<T>(values),
+				FilteringPredicate<T>.EntityParameter) :
+			null;
 	}
 
-	static Expression BuildConditionPredicate(FilterValues values)
+	public static Expression BuildConditionPredicate<T>(FilterValues values)
 	{
 		int total = 0;
 		var predicates = new Expression[values.Values.Count()];
@@ -39,11 +48,11 @@ internal sealed partial class FilterConditionBuilder<TEntity> : IFilterCondition
 						.Then(values.Values.Where(x => !x.PropertyName.Equals("id", StringComparison.OrdinalIgnoreCase))))
 		{
 			var fd = values.Filters[filterValue.PropertyName];
-			var operandsInfo = FilteringPredicate<TEntity>.GetOperandsInfo(filterValue.Operation);
+			var operandsInfo = FilteringPredicate<T>.GetOperandsInfo(filterValue.Operation);
 
 			if ((fd.Allowed & filterValue.Operation) != filterValue.Operation)
 			{
-				throw new InvalidOperationException($"Filter operation {filterValue.Operation.ToString()} or its options is not allowed on {typeof(TEntity).Name}.{fd.PropertyName}.");
+				throw new InvalidOperationException($"Filter operation {filterValue.Operation.ToString()} or its options is not allowed on {typeof(T).Name}.{fd.PropertyName}.");
 			}
 
 			if (operandsInfo.operandCount == 1)
@@ -51,7 +60,7 @@ internal sealed partial class FilterConditionBuilder<TEntity> : IFilterCondition
 				if (filterValue.Value != null || filterValue.Value2 != null)
 					throw new ArgumentException("filterValue.Value");
 
-				var buildMethod = typeof(FilteringPredicate<>).MakeGenericType(typeof(TEntity))
+				var buildMethod = typeof(FilteringPredicate<>).MakeGenericType(typeof(T))
 					.GetMethod("Build", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(FO), typeof(Type), typeof(string) }) ??
 					throw new InvalidCastException("Invalid filter arguments specified.");
 
@@ -93,7 +102,7 @@ internal sealed partial class FilterConditionBuilder<TEntity> : IFilterCondition
 					throw new ArgumentException("filterValue.Value");
 				}
 
-				var buildMethod = typeof(FilteringPredicate<>).MakeGenericType(typeof(TEntity))
+				var buildMethod = typeof(FilteringPredicate<>).MakeGenericType(typeof(T))
 					.GetMethod("Build", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(FO), typeof(Type), typeof(string), fd.OperandType }) ??
 					throw new MissingMethodException("An appropriate method to build the filter is missing.");
 
@@ -135,7 +144,7 @@ internal sealed partial class FilterConditionBuilder<TEntity> : IFilterCondition
 					throw new ArgumentException("filterValue.Value2");
 				}
 
-				var buildMethod = typeof(FilteringPredicate<>).MakeGenericType(typeof(TEntity))
+				var buildMethod = typeof(FilteringPredicate<>).MakeGenericType(typeof(T))
 					.GetMethod("Build", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(FO), typeof(Type), typeof(string), fd.OperandType, fd.OperandType }) ??
 					throw new MissingMethodException("An appropriate method to build the filter is missing.");
 

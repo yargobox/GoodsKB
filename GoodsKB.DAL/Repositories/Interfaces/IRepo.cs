@@ -16,8 +16,6 @@ public interface IRepo<K, T>
 {
 	IQueryable<T> Query { get; }
 	IIdentityProvider<K>? IdentityProvider { get; }
-	IFilterConditionBuilder FilterBuilder { get; }
-	ISortOrderConditionBuilder SortOrderBuilder { get; }
 	Task<long> GetCountAsync(Expression<Func<T, bool>>? where = null);
 	Task<T?> GetAsync(K id);
 	Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>>? where = null, OrderBy<T>? orderBy = null, long? skip = null, int? take = null);

@@ -17,8 +17,6 @@ internal class SqlRepo<K, T> : IRepo<K, T>
 
 	public virtual IQueryable<T> Query => throw new NotSupportedException();
 	public IIdentityProvider<K>? IdentityProvider { get; }
-	public IFilterConditionBuilder FilterBuilder { get; }
-	public ISortOrderConditionBuilder SortOrderBuilder { get; }
 
 	public virtual Task<long> GetCountAsync(Expression<Func<T, bool>>? where = null) => throw new NotSupportedException();
 

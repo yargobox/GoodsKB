@@ -1,11 +1,12 @@
 namespace GoodsKB.DAL.Repositories.SortOrders;
+
 using System.Reflection;
 using GoodsKB.DAL.Extensions.Reflection;
 using GoodsKB.DAL.Generic;
 
-internal sealed partial class SortOrderConditionBuilder<TEntity>
+public static partial class SortOrderConditionBuilder
 {
-	private static class DescHelper<TDto> where TDto : notnull
+	static class DescHelper<T, TDto> where T : notnull where TDto : notnull
 	{
 		public static IReadOnlyDictionary<string, SortOrderDesc> SortOrders { get; }
 
@@ -16,10 +17,10 @@ internal sealed partial class SortOrderConditionBuilder<TEntity>
 				.Where(x => x.IsDefined(typeof(SortOrderAttribute), false))
 				.Select(x => (
 					dtoProp: x,
-					entityProp: typeof(TEntity).GetProperty(x.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty) ??
-						throw new InvalidOperationException($"{typeof(TEntity).Name} does not have a property {x.Name}."),
+					entityProp: typeof(T).GetProperty(x.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty) ??
+						throw new InvalidOperationException($"{typeof(T).Name} does not have a property {x.Name}."),
 					attr: x.GetCustomAttribute<SortOrderAttribute>(false) ??
-						throw new InvalidOperationException($"{typeof(TEntity).Name}.{x.Name} does not have an attribute {nameof(SortOrderAttribute)}.")
+						throw new InvalidOperationException($"{typeof(T).Name}.{x.Name} does not have an attribute {nameof(SortOrderAttribute)}.")
 				))
 				.ToArray();
 
@@ -31,7 +32,7 @@ internal sealed partial class SortOrderConditionBuilder<TEntity>
 
 				if (!propType.IsAssignableFrom(entry.dtoProp.PropertyType))
 				{
-					throw new InvalidOperationException($"{typeof(TEntity).Name}.{entry.entityProp.Name} is not compatible with {typeof(TDto).Name}.{entry.entityProp.Name}.");
+					throw new InvalidOperationException($"{typeof(T).Name}.{entry.entityProp.Name} is not compatible with {typeof(TDto).Name}.{entry.entityProp.Name}.");
 				}
 
 				var initials = entry.attr.GetInitialValues();
@@ -56,7 +57,7 @@ internal sealed partial class SortOrderConditionBuilder<TEntity>
 
 				orders.Add(
 					entry.entityProp.Name,
-					new SortOrderDesc(entry.entityProp.Name, propType, underType)
+					new SortOrderDesc(entry.entityProp, underType)
 					{
 						Allowed = allowed,
 						Default = defop
