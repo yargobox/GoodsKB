@@ -1,18 +1,14 @@
 namespace GoodsKB.DAL.Repositories;
 
 using System.Linq.Expressions;
-using GoodsKB.DAL.Repositories.Filters;
-using GoodsKB.DAL.Repositories.SortOrders;
 
-public interface IIdentifiableEntity<K>
-	where K : notnull
+public interface IEntity<K>
 {
-	K Id { get; set; }
+	K? Id { get; set; }
 }
 
 public interface IRepo<K, T>
-	where K : notnull
-	where T : IIdentifiableEntity<K>
+	where T : IEntity<K>
 {
 	IQueryable<T> Query { get; }
 	IIdentityProvider<K>? IdentityProvider { get; }

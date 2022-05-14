@@ -1,12 +1,10 @@
 namespace GoodsKB.DAL.Repositories;
 
 using System.Linq.Expressions;
-using GoodsKB.DAL.Repositories.Filters;
-using GoodsKB.DAL.Repositories.SortOrders;
 
 internal class SqlRepo<K, T> : IRepo<K, T>
 	where K : notnull
-	where T : IIdentifiableEntity<K>
+	where T : IEntity<K>
 {
 	protected SqlRepo()
 	{

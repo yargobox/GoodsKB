@@ -4,11 +4,11 @@ using GoodsKB.DAL.Repositories.Mongo;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class ProductsRepo : SoftDelRepoMongo<int, Product, DateTimeOffset>
+internal class ProductsRepo : SoftDelRepoMongo<int?, Product, DateTimeOffset>
 {
 	public ProductsRepo(IMongoDbContext context)
 		: base(context, "products",
-			new SequenceIdentityProvider<int>(context, "products", 0, 1, x => x == 0)
+			new SequenceIdentityProvider<int?>(context, "products", 0, 1, x => x == 0)
 		)
 	{
 	}

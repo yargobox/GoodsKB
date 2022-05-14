@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 
 internal class SqlSoftDelRepo<K, T, TDateTime> : SqlRepo<K, T>, ISoftDelRepo<K, T, TDateTime>
 	where K : notnull
-	where T : IIdentifiableEntity<K>, ISoftDelEntity<TDateTime>
+	where T : IEntity<K>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	protected SqlSoftDelRepo()

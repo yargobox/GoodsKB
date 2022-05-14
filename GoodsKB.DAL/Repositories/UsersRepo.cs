@@ -4,11 +4,11 @@ using GoodsKB.DAL.Repositories.Mongo;
 
 namespace GoodsKB.DAL.Repositories;
 
-internal class UsersRepo : SoftDelRepoMongo<int, User, DateTimeOffset>
+internal class UsersRepo : SoftDelRepoMongo<int?, User, DateTimeOffset>
 {
 	public UsersRepo(IMongoDbContext context)
 		: base(context, "users",
-			new SequenceIdentityProvider<int>(context, "users", 0, 1, x => x == 0)
+			new SequenceIdentityProvider<int?>(context, "users", 0, 1, x => x == 0)
 		)
 	{
 	}
@@ -27,19 +27,5 @@ internal class UsersRepo : SoftDelRepoMongo<int, User, DateTimeOffset>
 
 		indexName = "phone_ux";
 		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Phone, false, null, x => x.Phone != null);
-	}
-}
-
-internal class TestRec : IIdentifiableEntity<string>, ISoftDelEntity<DateTimeOffset>
-{
-	public string Id { get; set; } = string.Empty;
-	public DateTimeOffset? Deleted { get; set; }
-}
-
-internal class TestRepo : SoftDelRepoMongo<string, TestRec, DateTimeOffset>
-{
-	public TestRepo(IMongoDbContext context)
-		: base(context, "tests")
-	{
 	}
 }

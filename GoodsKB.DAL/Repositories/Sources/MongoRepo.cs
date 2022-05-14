@@ -2,15 +2,12 @@ namespace GoodsKB.DAL.Repositories;
 
 using System.Linq.Expressions;
 using GoodsKB.DAL.Configuration;
-using GoodsKB.DAL.Repositories.Filters;
-using GoodsKB.DAL.Repositories.SortOrders;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
 internal class MongoRepo<K, T> : IRepo<K, T>
-	where K : notnull
-	where T : IIdentifiableEntity<K>
+	where T : IEntity<K>
 {
 	protected readonly IMongoDbContext _context;
 	protected readonly string _collectionName;

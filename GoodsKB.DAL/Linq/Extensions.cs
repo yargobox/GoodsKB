@@ -1,7 +1,7 @@
+namespace GoodsKB.DAL.Linq;
+
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
-
-namespace GoodsKB.DAL.Linq;
 
 public static class Extensions
 {

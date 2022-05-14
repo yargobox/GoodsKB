@@ -6,8 +6,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
 internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo<K, T, TDateTime>
-	where K : notnull
-	where T : IIdentifiableEntity<K>, ISoftDelEntity<TDateTime>
+	where T : IEntity<K>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	protected MongoSoftDelRepo(IMongoDbContext context, string collectionName, IIdentityProvider<K>? identityProvider = null)
@@ -61,6 +60,8 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo
 			filter = _Filter.Where(where) & filter;
 		}
 
+		//Console.WriteLine(filter.Render(_col.DocumentSerializer, _col.Settings.SerializerRegistry).ToString());//!!!
+
 		return await _col.CountDocumentsAsync(filter);
 	}
 
@@ -85,6 +86,8 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo
 			Skip = (int?)skip,
 			Limit = take
 		};
+
+		//Console.WriteLine(filter.Render(_col.DocumentSerializer, _col.Settings.SerializerRegistry).ToString());//!!!
 
 		return await (await _col.FindAsync(filter, options)).ToListAsync();
 	}

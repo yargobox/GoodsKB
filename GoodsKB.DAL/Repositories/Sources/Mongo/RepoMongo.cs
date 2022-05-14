@@ -6,8 +6,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
 internal class RepoMongo<K, T> : MongoRepo<K, T>, IRepoMongo<K, T>
-	where K : notnull
-	where T : IIdentifiableEntity<K>
+	where T : IEntity<K>
 {
 	public virtual IMongoCollection<T> Collection => _col;
 	public virtual IMongoQueryable<T> MongoQuery => _col.AsQueryable<T>();
@@ -22,7 +21,7 @@ internal class RepoMongo<K, T> : MongoRepo<K, T>, IRepoMongo<K, T>
 	{
 	}
 
-	public virtual async Task<IEnumerable<T>> GetAsync(FilterDefinition<T>? where, SortDefinition<T>? orderBy = null, long? skip = null, int? take = null)
+	public virtual async Task<IEnumerable<T>> MongoGetAsync(FilterDefinition<T>? where, SortDefinition<T>? orderBy = null, long? skip = null, int? take = null)
 	{
 		var options = new FindOptions<T, T>
 		{
@@ -34,7 +33,7 @@ internal class RepoMongo<K, T> : MongoRepo<K, T>, IRepoMongo<K, T>
 		return await (await _col.FindAsync(where ?? Filter.Empty, options)).ToListAsync();
 	}
 
-	public virtual async Task<IEnumerable<P>> GetAsync<P>(FilterDefinition<T>? where, ProjectionDefinition<T, P> projection, SortDefinition<T>? orderBy = null, long? skip = null, int? take = null)
+	public virtual async Task<IEnumerable<P>> MongoGetAsync<P>(FilterDefinition<T>? where, ProjectionDefinition<T, P> projection, SortDefinition<T>? orderBy = null, long? skip = null, int? take = null)
 	{
 		var options = new FindOptions<T, P>
 		{
@@ -47,7 +46,7 @@ internal class RepoMongo<K, T> : MongoRepo<K, T>, IRepoMongo<K, T>
 		return await (await _col.FindAsync(where ?? Filter.Empty, options)).ToListAsync();
 	}
 
-	public virtual async Task<long> UpdateAsync(FilterDefinition<T> where, UpdateDefinition<T> update)
+	public virtual async Task<long> MongoUpdateAsync(FilterDefinition<T> where, UpdateDefinition<T> update)
 	{
 		var options = new UpdateOptions { IsUpsert = false };
 

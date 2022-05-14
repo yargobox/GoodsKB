@@ -19,8 +19,7 @@ public interface ISoftDelEntity<TDateTime>
 }
 
 public interface ISoftDelRepo<K, T, TDateTime> : IRepo<K, T>
-	where K : notnull
-	where T : IIdentifiableEntity<K>, ISoftDelEntity<TDateTime>
+	where T : IEntity<K>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	IQueryable<T> GetQuery(SoftDel mode = SoftDel.All);

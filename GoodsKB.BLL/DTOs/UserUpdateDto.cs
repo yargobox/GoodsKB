@@ -4,7 +4,7 @@ namespace GoodsKB.BLL.DTOs;
 
 public class UserUpdateDto
 {
-	public int Id { get; set; }
+	public int? Id { get; set; }
 
 	public string? Username { get; set; }
 	public string? FirstName { get; set; }
@@ -16,5 +16,5 @@ public class UserUpdateDto
 	public virtual IEnumerable<UserRoles> Roles {get; set; } = new List<UserRoles>();
 	//public virtual IEnumerable<Direction> Directions {get; set; } = new List<Direction>();
 
-	public DateTimeOffset Updated { get; set; }
+	public DateTimeOffset? Updated { get; set; }
 }

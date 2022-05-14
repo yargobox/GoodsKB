@@ -7,7 +7,7 @@ namespace GoodsKB.API.Models;
 public class UserModel
 {
 	[Filter(Position = 1), SortOrder]
-	public int Id { get; set; }
+	public int? Id { get; set; }
 
 	[SortOrder(SO.Ascending)]
 	[Filter(Visible = false)]
@@ -35,7 +35,7 @@ public class UserModel
 	[SortOrder(SO.Descending, SOs.All)]
 	[GroupFilter("Modified", Position = 1, ConditionOrder = 2)]
 	[Filter(Position = 2)]
-	public DateTimeOffset Created { get; set; }
+	public DateTimeOffset? Created { get; set; }
 	
 	[FilterPart("Modified", 3)]
 	public DateTimeOffset? Updated { get; set; }

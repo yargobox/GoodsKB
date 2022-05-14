@@ -30,7 +30,7 @@ public class UserService : IUserService
 {
 	private readonly IMapper _mapper;
 	private readonly IDALContext _context;
-	private readonly ISoftDelRepoMongo<int, User, DateTimeOffset> _repo;
+	private readonly ISoftDelRepoMongo<int?, User, DateTimeOffset> _repo;
 
 	public UserService(IDALContext context, IMapper mapper)
 	{
@@ -68,7 +68,7 @@ public class UserService : IUserService
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 
-		if ((await _repo.GetAsync(filter)).FirstOrDefault() != null)
+		if ((await _repo.MongoGetAsync(filter)).FirstOrDefault() != null)
 			throw new Conflict409Exception("The username, email or phone already exists");
 
 		var item = _mapper.Map<User>(dto);
@@ -79,7 +79,7 @@ public class UserService : IUserService
 
 		//item.Password = _authService.HashPassword(newUser.Password);
 
-		return (await _repo.CreateAsync(item)).Id;
+		return (await _repo.CreateAsync(item)).Id!.Value;
 	}
 
 	public async Task<long> GetCountAsync(SoftDel mode, FilterValues? filter)
@@ -146,7 +146,7 @@ public class UserService : IUserService
 		else
 			throw new Conflict409Exception($"Email or phone must be provided");
 			
-		if ((await _repo.GetAsync(SoftDel.All, filter)).FirstOrDefault() != null)
+		if ((await _repo.MongoGetAsync(SoftDel.All, filter)).FirstOrDefault() != null)
 			throw new Conflict409Exception("The username, email or phone already exist");
 
 		//var item = _mapper.Map<User>(dto);

@@ -1,8 +1,6 @@
-namespace GoodsKB.DAL.Entities;
+namespace GoodsKB.BLL.DTOs;
 
-using GoodsKB.DAL.Repositories;
-
-public class Brand : IEntity<int?>, ISoftDelEntity<DateTimeOffset>
+public class BrandDto
 {
 	public int? Id { get; set; }
 
