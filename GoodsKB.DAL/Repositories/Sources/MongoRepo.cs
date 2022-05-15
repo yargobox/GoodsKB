@@ -79,7 +79,7 @@ internal class MongoRepo<K, T> : IRepo<K, T>
 		var options = new ReplaceOptions { IsUpsert = false };
 		
 		var result = await _col.ReplaceOneAsync(filter, entity);
-		return result.IsModifiedCountAvailable ? result.ModifiedCount != 0 : result.MatchedCount != 0;
+		return result.IsModifiedCountAvailable && result.ModifiedCount > 0;
 	}
 
 	public virtual async Task<T> UpdateCreateAsync(T entity)

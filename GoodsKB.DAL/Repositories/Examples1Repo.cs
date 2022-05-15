@@ -6,7 +6,7 @@ namespace GoodsKB.DAL.Repositories;
 
 internal class Examples1Repo : SoftDelRepoMongo<Example1Id, Example1, DateTimeOffset>
 {
-	public Examples1Repo(IMongoDbContext context) : base(context, "Example1", null)
+	public Examples1Repo(IMongoDbContext context) : base(context, "example1", null)
 	{
 	}
 }

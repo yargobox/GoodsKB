@@ -66,34 +66,30 @@ public class Examples1Service : IExamples1Service
 
 	public async Task<Example1Id> CreateAsync(Example1CreateDto dto)
 	{
-		var name = !string.IsNullOrWhiteSpace(dto.Name) ? dto.Name.Trim() :
+		var name = !string.IsNullOrWhiteSpace(dto.Id?.Name) ? dto.Id.Name.Trim() :
 			throw new Conflict409Exception($"A Example1 name must be provided.");
+
+		var code = dto.Id?.Code ?? 0;
 
 		var desc = !string.IsNullOrWhiteSpace(dto.Desc) ? dto.Desc.Trim() : null;
 
-		if (await _repo.GetCountAsync(SoftDel.All, x => x.Id!.Name!.ToLower() == name.ToLower()) > 0)
+		if (await _repo.GetCountAsync(SoftDel.All, x => x.Id!.Name!.ToLower() == name.ToLower() && x!.Id.Code == code) > 0)
 			throw new Conflict409Exception($"A Example1 {name} already exists.");
 
 		var item = _mapper.Map<Example1>(dto);
-		item.Id!.Name = name;
+		item.Id = new Example1Id(name, code);
 		item.Desc = desc;
 
 		return (await _repo.CreateAsync(item)).Id!;
 	}
+
 	public async Task UpdateAsync(Example1Id id, Example1UpdateDto dto)
 	{
 		var item = await _repo.GetAsync(id) ??
-			throw new NotFound404Exception($"A Example1 {dto.Name} [{id}] does not exist or has been deleted.");
-
-		var name = !string.IsNullOrWhiteSpace(dto.Name) ? dto.Name.Trim() :
-			throw new Conflict409Exception($"A Example1 name must be provided.");
+			throw new NotFound404Exception($"A Example1 [{id.ToString()}] does not exist or has been deleted.");
 
 		var desc = !string.IsNullOrWhiteSpace(dto.Desc) ? dto.Desc.Trim() : null;
 
-		if (item.Id!.Name != name && await _repo.GetCountAsync(SoftDel.All, x => x.Id!.Name!.ToLower() == name.ToLower()) > 0)
-			throw new Conflict409Exception($"A Example1 {name} already exists.");
-
-		item.Id.Name = name;
 		item.Desc = desc;
 
 		if (!await _repo.UpdateAsync(item))

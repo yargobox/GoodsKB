@@ -59,9 +59,6 @@ public class Example1 : IEntity<Example1Id>, ISoftDelEntity<DateTimeOffset>
 
 	public Example1Id? Id { get; set; }
 
-	public string? Name { get => Id?.Name; }
-	public int? Code { get => Id?.Code; }
-
 	public string? Desc { get; set; }
 
 	public DateTimeOffset? Created { get; set; }

@@ -6,8 +6,6 @@ public class Example1Dto
 {
 	public Example1Id? Id { get; set; }
 
-	public string? Name { get; set; }
-	public int? Code { get; set; }
 	public string? Desc { get; set; }
 
 	public DateTimeOffset? Created { get; set; }
