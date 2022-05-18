@@ -2,7 +2,7 @@ using  GoodsKB.DAL.Repositories;
 
 namespace GoodsKB.DAL.Entities;
 
-public class Direction : IEntity<int?>, ISoftDelEntity<DateTimeOffset>
+public class Direction : IUpdatedEntity<int?, DateTimeOffset>, ISoftDelEntity<DateTimeOffset>
 {
 	public int? Id { get; set; }
 

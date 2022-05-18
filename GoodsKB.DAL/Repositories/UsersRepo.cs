@@ -7,9 +7,7 @@ namespace GoodsKB.DAL.Repositories;
 internal class UsersRepo : SoftDelRepoMongo<int?, User, DateTimeOffset>
 {
 	public UsersRepo(IMongoDbContext context)
-		: base(context, "users",
-			new SequenceIdentityProvider<int?>(context, "users", 0, 1, x => x == 0)
-		)
+		: base(context, "users", new PesemisticSequentialIdGenerator<User, DateTimeOffset>())
 	{
 	}
 
@@ -20,12 +18,21 @@ internal class UsersRepo : SoftDelRepoMongo<int?, User, DateTimeOffset>
 		var indexeNames = await GetIndexNames();
 
 		var indexName = "username_ux";
-		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Username);
+		if (!indexeNames.Contains(indexName))
+		{
+			await CreateIndexAsync(indexName, true, false, x => x.Username, false, Collations.Ukrainian_CI_AS);
+		}
 
 		indexName = "email_ux";
-		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Email, false, null, x => x.Email != null);
+		if (!indexeNames.Contains(indexName))
+		{
+			await CreateIndexAsync(indexName, true, true, x => x.Email, false, Collations.Ukrainian_CI_AS);
+		}
 
 		indexName = "phone_ux";
-		if (!indexeNames.Contains(indexName)) await CreateIndex(indexName, true, x => x.Phone, false, null, x => x.Phone != null);
+		if (!indexeNames.Contains(indexName))
+		{
+			await CreateIndexAsync(indexName, true, true, x => x.Phone, false, Collations.Ukrainian_CI_AS);
+		}
 	}
 }

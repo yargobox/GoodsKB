@@ -54,7 +54,11 @@
 
 ### Mongo
 
-`docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 mongo`
+- instance
+`docker run -d --rm --name mongo -p 27017:27017 -v mongodbdata:/data/db -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=Pass#word1 mongo:5.0.8`
+
+- shell
+`docker exec -it mongo mongosh "mongodb://mongoadmin:Pass%23word1@127.0.0.1:27017/?authSource=admin&readPreference=primary&ssl=false"`
 
 ## To consider
 

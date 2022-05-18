@@ -5,18 +5,18 @@ using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
 internal class SoftDelRepoMongo<K, T, TDateTime> : MongoSoftDelRepo<K, T, TDateTime>, ISoftDelRepoMongo<K, T, TDateTime>
-	where T : IEntity<K>, ISoftDelEntity<TDateTime>
+	where T : IEntity<K, TDateTime>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
-	protected SoftDelRepoMongo(IMongoDbContext context, string collectionName, IIdentityProvider<K>? identityProvider = null)
-		: base(context, collectionName, identityProvider)
+	protected SoftDelRepoMongo(IMongoDbContext context, string collectionName, IIdentityGenerator<K>? identityGenerator = null)
+		: base(context, collectionName, identityGenerator)
 	{
 	}
 
 	#region IRepoMongo
 
 	public virtual IMongoCollection<T> Collection => _col;
-	public virtual IMongoQueryable<T> MongoQuery => _col.AsQueryable<T>();
+	public virtual IMongoQueryable<T> AsMongoQueryable() => AsMongoQueryableInternal(SoftDel.Actual);
 
 	public FilterDefinitionBuilder<T> Filter => _Filter;
 	public UpdateDefinitionBuilder<T> Update => _Update;
@@ -57,6 +57,15 @@ internal class SoftDelRepoMongo<K, T, TDateTime> : MongoSoftDelRepo<K, T, TDateT
 		where &= _Filter.Ne(x => x.Deleted, null);
 		var options = new UpdateOptions { IsUpsert = false };
 
+		if (_hasUpdated)
+		{
+			update.CurrentDate(nameof(IUpdatedEntity<K, TDateTime>.Updated), UpdateDefinitionCurrentDateType.Date);
+		}
+		else if (_hasModified)
+		{
+			update.CurrentDate(nameof(IModifiedEntity<K, TDateTime>.Modified), UpdateDefinitionCurrentDateType.Date);
+		}
+
 		var result = await _col.UpdateManyAsync(where, update, options);
 		return await Task.FromResult(result.ModifiedCount);
 	}
@@ -66,7 +75,7 @@ internal class SoftDelRepoMongo<K, T, TDateTime> : MongoSoftDelRepo<K, T, TDateT
 
 	#region ISoftDelRepoMongo
 
-	public virtual IMongoQueryable<T> MongoGetQuery(SoftDel mode = SoftDel.All) => GetMongoQueryInternal(mode);
+	public virtual IMongoQueryable<T> AsMongoQueryable(SoftDel mode) => AsMongoQueryableInternal(mode);
 
 	public virtual async Task<IEnumerable<T>> MongoGetAsync(SoftDel mode, FilterDefinition<T>? where, SortDefinition<T>? orderBy = null, long? skip = null, int? take = null)
 	{

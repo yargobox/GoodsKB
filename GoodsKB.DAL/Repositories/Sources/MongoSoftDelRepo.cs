@@ -5,18 +5,18 @@ using GoodsKB.DAL.Configuration;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo<K, T, TDateTime>
-	where T : IEntity<K>, ISoftDelEntity<TDateTime>
+internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T, TDateTime>, ISoftDelRepo<K, T, TDateTime>
+	where T : IEntity<K, TDateTime>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
-	protected MongoSoftDelRepo(IMongoDbContext context, string collectionName, IIdentityProvider<K>? identityProvider = null)
-		: base(context, collectionName, identityProvider)
+	protected MongoSoftDelRepo(IMongoDbContext context, string collectionName, IIdentityGenerator<K>? identityGenerator = null)
+		: base(context, collectionName, identityGenerator)
 	{
 	}
 
 	#region IRepo
 
-	public override IQueryable<T> Query => GetMongoQueryInternal(SoftDel.Actual);
+	public override IQueryable<T> AsQueryable() => AsMongoQueryableInternal(SoftDel.Actual);
 
 	public override async Task<long> GetCountAsync(Expression<Func<T, bool>>? where = null) => await GetCountAsync(SoftDel.Actual, where);
 
@@ -28,7 +28,7 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo
 	public override async Task<bool> DeleteAsync(K id)
 	{
 		var filter = _Filter.Eq(item => item.Id, id) & _Filter.Eq(x => x.Deleted, null);
-		var update = Builders<T>.Update.CurrentDate(x => x.Deleted);
+		var update = Builders<T>.Update.CurrentDate(x => x.Deleted, UpdateDefinitionCurrentDateType.Date);
 		var options = new UpdateOptions { IsUpsert = false };
 
 		var result = await _col.UpdateOneAsync(filter, update, options);
@@ -38,7 +38,7 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo
 	public override async Task<long> DeleteAsync(Expression<Func<T, bool>> where)
 	{
 		var filter = _Filter.Where(where) & _Filter.Where(x => x.Deleted == null);
-		var update = Builders<T>.Update.CurrentDate(x => x.Deleted);
+		var update = Builders<T>.Update.CurrentDate(x => x.Deleted, UpdateDefinitionCurrentDateType.Date);
 		var options = new UpdateOptions { IsUpsert = false };
 
 		var result = await _col.UpdateManyAsync(filter, update, options);
@@ -50,7 +50,7 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo
 
 	#region ISoftDelRepo
 
-	public virtual IQueryable<T> GetQuery(SoftDel mode = SoftDel.All) => GetMongoQueryInternal(mode);
+	public virtual IQueryable<T> AsQueryable(SoftDel mode) => AsMongoQueryableInternal(mode);
 
 	public virtual async Task<long> GetCountAsync(SoftDel mode, Expression<Func<T, bool>>? where = null)
 	{
@@ -130,7 +130,7 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T>, ISoftDelRepo
 		}
 	}
 
-	protected IMongoQueryable<T> GetMongoQueryInternal(SoftDel mode = SoftDel.All) => mode switch
+	protected IMongoQueryable<T> AsMongoQueryableInternal(SoftDel mode = SoftDel.All) => mode switch
 		{
 			SoftDel.Actual => _col.AsQueryable<T>().Where(x => x.Deleted == null),
 			SoftDel.Deleted => _col.AsQueryable<T>().Where(x => x.Deleted != null),

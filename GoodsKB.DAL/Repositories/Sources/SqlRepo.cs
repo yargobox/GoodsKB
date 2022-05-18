@@ -2,9 +2,9 @@ namespace GoodsKB.DAL.Repositories;
 
 using System.Linq.Expressions;
 
-internal class SqlRepo<K, T> : IRepo<K, T>
-	where K : notnull
-	where T : IEntity<K>
+internal class SqlRepo<K, T, TDateTime> : IRepo<K, T, TDateTime>
+	where T : IEntity<K, TDateTime>
+	where TDateTime : struct
 {
 	protected SqlRepo()
 	{
@@ -13,8 +13,8 @@ internal class SqlRepo<K, T> : IRepo<K, T>
 
 	#region IRepo
 
-	public virtual IQueryable<T> Query => throw new NotSupportedException();
-	public IIdentityProvider<K>? IdentityProvider { get; }
+	public virtual IQueryable<T> AsQueryable() => throw new NotSupportedException();
+	public IIdentityGenerator<K>? IdentityGenerator { get; }
 
 	public virtual Task<long> GetCountAsync(Expression<Func<T, bool>>? where = null) => throw new NotSupportedException();
 

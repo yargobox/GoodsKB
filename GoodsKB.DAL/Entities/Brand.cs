@@ -2,7 +2,7 @@ namespace GoodsKB.DAL.Entities;
 
 using GoodsKB.DAL.Repositories;
 
-public class Brand : IEntity<int?>, ISoftDelEntity<DateTimeOffset>
+public class Brand : IUpdatedEntity<int?, DateTimeOffset>, ISoftDelEntity<DateTimeOffset>
 {
 	public int? Id { get; set; }
 

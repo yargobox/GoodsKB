@@ -75,7 +75,6 @@ public class UserService : IUserService
 		item.Username = username;
 		item.Email = email;
 		item.Phone = phone;
-		item.Created = DateTimeOffset.UtcNow;
 
 		//item.Password = _authService.HashPassword(newUser.Password);
 
@@ -110,8 +109,8 @@ public class UserService : IUserService
 
 	public async Task<UserDto> GetAsync(int id)
 	{
-		var item = await _repo.GetAsync(id);
-		if (item == null) throw new NotFound404Exception($"User {id} do not exist");
+		var item = await _repo.GetAsync(SoftDel.All, id);
+		if (item == null) throw new NotFound404Exception($"User {id} does not exist");
 		var mapped = _mapper.Map<UserDto>(item);
 		return mapped;
 	}
@@ -154,7 +153,6 @@ public class UserService : IUserService
 		item.Username = username;
 		item.Email = email;
 		item.Phone = phone;
-		item.Updated = DateTimeOffset.UtcNow;
 
 		//item.Password = _authService.HashPassword(newUser.Password);
 

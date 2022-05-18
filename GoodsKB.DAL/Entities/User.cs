@@ -1,16 +1,22 @@
 using  GoodsKB.DAL.Repositories;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace GoodsKB.DAL.Entities;
 
-public class User : IEntity<int?>, ISoftDelEntity<DateTimeOffset>
+public class User : IUpdatedEntity<int?, DateTimeOffset>, ISoftDelEntity<DateTimeOffset>
 {
 	public int? Id { get; set; }
 
 	public string? Username { get; set; }
 	public string? FirstName { get; set; }
 	public string? LastName { get; set; }
+
+	[BsonIgnoreIfNull]
 	public string? Email { get; set; }
+
+	[BsonIgnoreIfNull]
 	public string? Phone { get; set; }
+	
 	public string? Desc { get; set; }
 
 	public string? UsernameHash { get; set; }

@@ -3,11 +3,12 @@ namespace GoodsKB.DAL.Repositories.Mongo;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 
-public interface IRepoMongo<K, T> : IRepo<K, T>
-	where T : IEntity<K>
+public interface IRepoMongo<K, T, TDateTime> : IRepo<K, T, TDateTime>
+	where T : IEntity<K, TDateTime>
+	where TDateTime : struct
 {
 	IMongoCollection<T> Collection { get; }
-	IMongoQueryable<T> MongoQuery { get; }
+	IMongoQueryable<T> AsMongoQueryable();
 
 	FilterDefinitionBuilder<T> Filter { get; }
 	UpdateDefinitionBuilder<T> Update { get; }

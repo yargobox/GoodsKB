@@ -49,7 +49,7 @@ public class BrandService : IBrandService
 
 	public async Task<IEnumerable<BrandDto>> GetAsync(SoftDel mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber)
 	{
-		var items = await _repo.GetQuery(mode)
+		var items = await _repo.AsQueryable(mode)
 			.Where(filter)
 			.OrderBy(sort)
 			.Skip((pageNumber - 1) * pageSize)

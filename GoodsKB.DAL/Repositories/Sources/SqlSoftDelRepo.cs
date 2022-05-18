@@ -2,9 +2,8 @@ namespace GoodsKB.DAL.Repositories;
 
 using System.Linq.Expressions;
 
-internal class SqlSoftDelRepo<K, T, TDateTime> : SqlRepo<K, T>, ISoftDelRepo<K, T, TDateTime>
-	where K : notnull
-	where T : IEntity<K>, ISoftDelEntity<TDateTime>
+internal class SqlSoftDelRepo<K, T, TDateTime> : SqlRepo<K, T, TDateTime>, ISoftDelRepo<K, T, TDateTime>
+	where T : IEntity<K, TDateTime>, ISoftDelEntity<TDateTime>
 	where TDateTime : struct
 {
 	protected SqlSoftDelRepo()
@@ -14,7 +13,7 @@ internal class SqlSoftDelRepo<K, T, TDateTime> : SqlRepo<K, T>, ISoftDelRepo<K, 
 
 	#region IRepo
 
-	public override IQueryable<T> Query => throw new NotSupportedException();
+	public override IQueryable<T> AsQueryable() => throw new NotSupportedException();
 
 	public override Task<long> GetCountAsync(Expression<Func<T, bool>>? where = null) => throw new NotSupportedException();
 
@@ -38,7 +37,7 @@ internal class SqlSoftDelRepo<K, T, TDateTime> : SqlRepo<K, T>, ISoftDelRepo<K, 
 
 	#region ISoftDelRepo
 
-	public virtual IQueryable<T> GetQuery(SoftDel mode = SoftDel.All) => throw new NotSupportedException();
+	public virtual IQueryable<T> AsQueryable(SoftDel mode = SoftDel.All) => throw new NotSupportedException();
 
 	public virtual Task<long> GetCountAsync(SoftDel mode, Expression<Func<T, bool>>? where = null)
 	{

@@ -54,7 +54,7 @@ public class Examples1Service : IExamples1Service
 	}
 	public async Task<IEnumerable<Example1Dto>> GetAsync(SoftDel mode, FilterValues? filter, SortOrderValues? sort, int pageSize, int pageNumber)
 	{
-		var items = await _repo.GetQuery(mode)
+		var items = await _repo.AsQueryable(mode)
 			.Where(filter)
 			.OrderBy(sort)
 			.Skip((pageNumber - 1) * pageSize)

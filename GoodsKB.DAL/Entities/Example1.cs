@@ -44,7 +44,7 @@ public sealed class Example1Id : CompoundId<Example1Id, Example1>
 	}
 }
 
-public class Example1 : IEntity<Example1Id>, ISoftDelEntity<DateTimeOffset>
+public class Example1 : IUpdatedEntity<Example1Id, DateTimeOffset>, ISoftDelEntity<DateTimeOffset>
 {
 	public Example1() { }
 

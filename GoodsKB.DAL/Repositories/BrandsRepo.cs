@@ -7,8 +7,7 @@ namespace GoodsKB.DAL.Repositories;
 internal class BrandsRepo : SoftDelRepoMongo<int?, Brand, DateTimeOffset>
 {
 	public BrandsRepo(IMongoDbContext context)
-		: base(context, "brands", new SequenceIdentityProvider<int?>(context, "brands", 0, 1, x => x == 0)
-		)
+		: base(context, "brands", new PesemisticSequentialIdGenerator<Brand, DateTimeOffset>())
 	{
 	}
 }
