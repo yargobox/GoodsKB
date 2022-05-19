@@ -3,28 +3,15 @@ namespace GoodsKB.DAL.Repositories;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 
-public class CompositeIdSerializer<K> : IBsonSerializer<K?> where K : class?
+public class CompoundIdSerializer<K, T> : IBsonSerializer<K?>
+	where K : CompoundId<K, T>
 {
-	private static Func<string, K>? _create;
-
-	public void MapCreator(Func<string, K> creator) => _create = creator;
-
-	public CompositeIdSerializer() { }
-	public CompositeIdSerializer(BsonType representation)
+	public CompoundIdSerializer(BsonType representation)
 	{
 		if (representation != BsonType.String)
 		{
 			throw new ArgumentException($"{representation.ToString()} is not a valid representation for a {nameof(K)}.");
 		}
-	}
-	public CompositeIdSerializer(BsonType representation, Func<string, K> creator)
-	{
-		if (representation != BsonType.String)
-		{
-			throw new ArgumentException($"{representation.ToString()} is not a valid representation for a {nameof(K)}.");
-		}
-
-		_create = creator;
 	}
 
 	public Type ValueType => typeof(K);
@@ -37,13 +24,8 @@ public class CompositeIdSerializer<K> : IBsonSerializer<K?> where K : class?
 			var type = context.Reader.GetCurrentBsonType();
 			if (type == BsonType.String)
 			{
-				if (_create == null)
-				{
-					throw new InvalidOperationException($"{nameof(CompositeIdSerializer<K>)}<{typeof(K).Name}>.{nameof(MapCreator)} must be called first.");
-				}
-
 				var s = context.Reader.ReadString();
-				return _create(s);
+				return CompoundId<K, T>.Create.FromStrng(s);
 			}
 			else if (type == BsonType.Null)
 			{
@@ -57,7 +39,7 @@ public class CompositeIdSerializer<K> : IBsonSerializer<K?> where K : class?
 		}
 		else
 		{
-			throw new BsonSerializationException($"Invalid state of the reader in {nameof(CompositeIdSerializer<K>)}<{typeof(K).Name}>.");
+			throw new BsonSerializationException($"Invalid state of the reader in {nameof(CompoundIdSerializer<K, T>)}<{typeof(K).Name}>.");
 		}
 	}
 
@@ -66,7 +48,7 @@ public class CompositeIdSerializer<K> : IBsonSerializer<K?> where K : class?
 		if (value == null)
 			context.Writer.WriteNull();
 		else
-			context.Writer.WriteString(value.ToString());
+			context.Writer.WriteString(value.SerializeToString());
 	}
 
 	public void Serialize(BsonSerializationContext context, BsonSerializationArgs args, object value)
@@ -74,7 +56,7 @@ public class CompositeIdSerializer<K> : IBsonSerializer<K?> where K : class?
 		if (value == null)
 			context.Writer.WriteNull();
 		else
-			context.Writer.WriteString(value.ToString());
+			context.Writer.WriteString(((K)value).SerializeToString());
 	}
 
 	object IBsonSerializer.Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)

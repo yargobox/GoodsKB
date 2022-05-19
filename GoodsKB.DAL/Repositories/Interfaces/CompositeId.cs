@@ -1,11 +1,17 @@
 namespace GoodsKB.DAL.Repositories;
 
+/// <summary>
+/// Interface of a complex identifier whose keys are stored in separate fields
+/// </summary>
 public interface ICompositeId : IEquatable<ICompositeId>
 {
 	abstract IEnumerable<object?> GetIdentityValues();
 	abstract string SerializeToString();
 }
 
+/// <summary>
+/// Basic implementation of a complex identifier whose keys are stored in separate fields
+/// </summary>
 public abstract class CompositeId<K, T> : IEquatable<CompositeId<K, T>>, ICompositeId
 	where K : CompositeId<K, T>
 {

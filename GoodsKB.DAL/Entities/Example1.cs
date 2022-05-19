@@ -3,7 +3,7 @@ namespace GoodsKB.DAL.Entities;
 using GoodsKB.DAL.Repositories;
 using GoodsKB.DAL.Runtime;
 
-public sealed class Example1Id : CompoundId<Example1Id, Example1>
+public sealed class Example1Id : CompositeId<Example1Id, Example1>
 {
 	public string? Name { get; set; }
 	public int? Code { get; set; }

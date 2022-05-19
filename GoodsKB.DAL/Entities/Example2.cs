@@ -5,7 +5,7 @@ using GoodsKB.DAL.Runtime;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 
-public sealed class Example2Id : CompositeId<Example2Id, Example2>
+public sealed class Example2Id : CompoundId<Example2Id, Example2>
 {
 	public string? Name { get; set; }
 	public int? Code { get; set; }
@@ -44,7 +44,8 @@ public sealed class Example2Id : CompositeId<Example2Id, Example2>
 			return new Example2Id(name, code);
 		});
 
-		BsonSerializer.RegisterSerializer(new CompositeIdSerializer<Example2Id>(BsonType.String, Create.FromStrng));
+		// CompoundId has a string serializer
+		BsonSerializer.RegisterSerializer(new CompoundIdSerializer<Example2Id, Example2>(BsonType.String));
 	}
 }
 
