@@ -11,7 +11,7 @@ public abstract class CompoundId<K, T> : IEquatable<CompoundId<K, T>>, ICompound
 {
 	public static class Create
 	{
-		private static volatile Func<string, K> _create = null!;
+		private static Func<string, K> _create = null!;
 
 		public static void MapCreator(Func<string, K> creator) => _create = creator;
 
