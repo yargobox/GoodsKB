@@ -14,6 +14,7 @@ public interface IDALContext
 	ISoftDelRepoMongo<int?, Product, DateTimeOffset> Products { get; }
 	ISoftDelRepoMongo<int?, Brand, DateTimeOffset> Brands { get; }
 	ISoftDelRepoMongo<Example1Id, Example1, DateTimeOffset> Examples1 { get; }
+	ISoftDelRepoMongo<Example2Id, Example2, DateTimeOffset> Examples2 { get; }
 }
 
 public class DALContext : IDALContext
@@ -28,6 +29,7 @@ public class DALContext : IDALContext
 		Products = new ProductsRepo(mongoDbContext);
 		Brands = new BrandsRepo(mongoDbContext);
 		Examples1 = new Examples1Repo(mongoDbContext);
+		Examples2 = new Examples2Repo(mongoDbContext);
 	}
 
 	public ISoftDelRepoMongo<int?, User, DateTimeOffset> Users { get; }
@@ -38,4 +40,5 @@ public class DALContext : IDALContext
 	public ISoftDelRepoMongo<int?, Product, DateTimeOffset> Products { get; }
 	public ISoftDelRepoMongo<int?, Brand, DateTimeOffset> Brands { get; }
 	public ISoftDelRepoMongo<Example1Id, Example1, DateTimeOffset> Examples1 { get; }
+	public ISoftDelRepoMongo<Example2Id, Example2, DateTimeOffset> Examples2 { get; }
 }

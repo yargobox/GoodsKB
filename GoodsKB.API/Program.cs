@@ -24,9 +24,12 @@ builder.Services.AddControllers(options => { options.SuppressAsyncSuffixInAction
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IExamples1Service, Examples1Service>();
+builder.Services.AddScoped<IExamples2Service, Examples2Service>();
+
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();

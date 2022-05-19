@@ -60,7 +60,7 @@ internal class MongoSoftDelRepo<K, T, TDateTime> : MongoRepo<K, T, TDateTime>, I
 			filter = _Filter.Where(where) & filter;
 		}
 
-		//Console.WriteLine(filter.Render(_col.DocumentSerializer, _col.Settings.SerializerRegistry).ToString());//!!!
+		Console.WriteLine(filter.Render(_col.DocumentSerializer, _col.Settings.SerializerRegistry).ToString());//!!!
 
 		return await _col.CountDocumentsAsync(filter);
 	}

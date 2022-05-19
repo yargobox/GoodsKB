@@ -1,17 +1,17 @@
 namespace GoodsKB.DAL.Repositories;
 
-public interface ICompoundId : IEquatable<ICompoundId>
+public interface ICompositeId : IEquatable<ICompositeId>
 {
 	abstract IEnumerable<object?> GetIdentityValues();
 	abstract string SerializeToString();
 }
 
-public abstract class CompoundId<K, T> : IEquatable<CompoundId<K, T>>, ICompoundId
-	where K : CompoundId<K, T>
+public abstract class CompositeId<K, T> : IEquatable<CompositeId<K, T>>, ICompositeId
+	where K : CompositeId<K, T>
 {
 	public static class Create
 	{
-		private static volatile Func<string, K> _create = null!;
+		private static Func<string, K> _create = null!;
 
 		public static void MapCreator(Func<string, K> creator) => _create = creator;
 
@@ -30,20 +30,20 @@ public abstract class CompoundId<K, T> : IEquatable<CompoundId<K, T>>, ICompound
 	{
 		if (object.ReferenceEquals(this, obj)) return true;
 		if (object.ReferenceEquals(null, obj)) return false;
-		var other = obj as CompoundId<K, T>;
+		var other = obj as CompositeId<K, T>;
 		return other != null && GetIdentityValues().SequenceEqual(other.GetIdentityValues());
 	}
-	public virtual bool Equals(CompoundId<K, T>? other)
+	public virtual bool Equals(CompositeId<K, T>? other)
 	{
 		if (object.ReferenceEquals(this, other)) return true;
 		if (object.ReferenceEquals(null, other)) return false;
 		return GetIdentityValues().SequenceEqual(other.GetIdentityValues());
 	}
-	public virtual bool Equals(ICompoundId? obj)
+	public virtual bool Equals(ICompositeId? obj)
 	{
 		if (object.ReferenceEquals(this, obj)) return true;
 		if (object.ReferenceEquals(null, obj)) return false;
-		var other = obj as CompoundId<K, T>;
+		var other = obj as CompositeId<K, T>;
 		return other != null && GetIdentityValues().SequenceEqual(other.GetIdentityValues());
 	}
 
